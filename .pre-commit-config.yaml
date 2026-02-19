@@ -1,0 +1,61 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: debug-statements
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.8
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.16.23
+    hooks:
+      - id: typos
+
+  - repo: https://github.com/allganize/ty-pre-commit
+    rev: v0.0.17
+    hooks:
+      - id: ty-check
+        types_or: [python, pyi]
+        additional_dependencies:
+          - torch
+          - numpy
+          - monai
+          - nibabel
+          - pillow
+          - pytest
+          - fastapi
+          - uvicorn
+          - lightning
+
+  - repo: local
+    hooks:
+      - id: go-vet
+        name: go vet
+        entry: bash -c 'cd UI/tui && go vet ./...'
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      - id: gofumpt
+        name: gofumpt
+        entry: bash -c 'cd UI/tui && gofumpt -w .'
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      - id: biome-check
+        name: biome check
+        entry: biome check --write UI/gui/
+        language: system
+        types: [javascript]
+        pass_filenames: false
