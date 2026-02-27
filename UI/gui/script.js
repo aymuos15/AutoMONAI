@@ -288,12 +288,14 @@ function updateCommand() {
 
 	if (augmentEnabled) {
 		command += " --augment";
-		if (aug_rotate) {
-			command += ` --aug_rotate --aug_rotate_prob ${aug_rotate_prob}`;
+		// Use the average of rotate and flip probabilities
+		let avgProb = aug_rotate_prob;
+		if (aug_rotate && aug_flip) {
+			avgProb = (parseFloat(aug_rotate_prob) + parseFloat(aug_flip_prob)) / 2;
+		} else if (aug_flip) {
+			avgProb = aug_flip_prob;
 		}
-		if (aug_flip) {
-			command += ` --aug_flip --aug_flip_prob ${aug_flip_prob}`;
-		}
+		command += ` --aug_prob ${avgProb}`;
 	}
 
 	if (optimizer !== "adam") {
@@ -470,7 +472,13 @@ function switchPage(pageName) {
 	});
 
 	document.getElementById(`${pageName}-page`).classList.add("active");
-	event.target.classList.add("active");
+
+	// Find and activate the corresponding nav tab
+	const navTab = Array.from(tabs).find(tab => {
+		const pageName2 = tab.onclick.toString().match(/switchPage\('(\w+)'\)/)[1];
+		return pageName2 === pageName;
+	});
+	if (navTab) navTab.classList.add("active");
 
 	// Load results if switching to results page
 	if (pageName === "results") {
@@ -501,6 +509,7 @@ function switchSubTab(subTabName) {
 
 let selectedResultIndex = 0;
 const allTabs = [
+	// Generate page tabs
 	{ name: "Command", id: "command", page: "generate" },
 	{ name: "Models", id: "models", page: "generate" },
 	{ name: "Dataset Classes", id: "dataset-classes", page: "generate" },
@@ -511,6 +520,7 @@ const allTabs = [
 	{ name: "Loss Functions", id: "loss", page: "generate" },
 	{ name: "Device", id: "device", page: "generate" },
 	{ name: "Active Transforms", id: "summary", page: "generate" },
+	// Docs page tabs
 	{ name: "Models (Docs)", id: "models", page: "docs" },
 	{ name: "Dataset Classes (Docs)", id: "dataset-classes", page: "docs" },
 	{ name: "Training Options (Docs)", id: "training", page: "docs" },
@@ -519,6 +529,9 @@ const allTabs = [
 	{ name: "Metrics (Docs)", id: "metrics", page: "docs" },
 	{ name: "Loss Functions (Docs)", id: "loss", page: "docs" },
 	{ name: "Device (Docs)", id: "device", page: "docs" },
+	// Main pages
+	{ name: "Launch", id: null, page: "launch" },
+	{ name: "Results", id: null, page: "results" },
 ];
 
 function openTabSearch() {
@@ -550,6 +563,8 @@ function updateSearchResults(query) {
 		div.className = "tab-search-result";
 		if (index === 0) div.classList.add("selected");
 		div.textContent = tab.name;
+		div.dataset.tabPage = tab.page;
+		div.dataset.tabId = tab.id;
 		div.onclick = () => selectTab(tab);
 		resultsDiv.appendChild(div);
 	});
@@ -557,13 +572,29 @@ function updateSearchResults(query) {
 
 function selectTab(tab) {
 	switchPage(tab.page);
-	setTimeout(() => {
-		const button = document.querySelector(
-			`#${tab.page}-page .sub-tab[onclick="switchSubTab('${tab.id}')"]`,
-		);
-		if (button) button.click();
+	// Only switch sub-tabs if the tab has an id (pages like launch/results don't have sub-tabs)
+	if (tab.id) {
+		setTimeout(() => {
+			const button = document.querySelector(
+				`#${tab.page}-page .sub-tab[onclick="switchSubTab('${tab.id}')"]`,
+			);
+			if (button) {
+				// Manually activate the sub-page and sub-tab
+				const activePage = document.querySelector(".page.active");
+				const subPages = activePage.querySelectorAll(".sub-page");
+				subPages.forEach((page) => page.classList.remove("active"));
+
+				const subTabs = activePage.querySelectorAll(".sub-tab");
+				subTabs.forEach((t) => t.classList.remove("active"));
+
+				activePage.querySelector(`#sub-${tab.id}`).classList.add("active");
+				button.classList.add("active");
+			}
+			closeTabSearch();
+		}, 0);
+	} else {
 		closeTabSearch();
-	}, 0);
+	}
 }
 
 function navigateResults(direction) {
@@ -631,10 +662,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			e.preventDefault();
 			const selected = document.querySelector(".tab-search-result.selected");
 			if (selected) {
-				const index = Array.from(
-					document.querySelectorAll(".tab-search-result"),
-				).indexOf(selected);
-				selectTab(allTabs[index]);
+				const tabPage = selected.dataset.tabPage;
+				const tabId = selected.dataset.tabId === "null" ? null : selected.dataset.tabId;
+				selectTab({ page: tabPage, id: tabId });
 			}
 		} else if (e.key === "Escape") {
 			closeTabSearch();
