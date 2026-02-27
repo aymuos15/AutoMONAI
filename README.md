@@ -106,5 +106,10 @@ See [AGENTS.md](./AGENTS.md) for detailed coding guidelines:
 │   └── {dataset}/{model}/{timestamp}/  # Config, metrics, checkpoints per run
 ├── pyproject.toml           # Project config & dependencies
 ├── AGENTS.md                # Coding guidelines for agents
+├── LICENSE                  # MIT License
 └── .pre-commit-config.yaml  # Pre-commit hooks (prek)
 ```
+
+## License
+
+This project is licensed under the MIT License — see [LICENSE](./LICENSE) for details.
