@@ -1,0 +1,184 @@
+:root {
+	--bg: #0a0a0a;
+	--fg: #f5f5f5;
+	--fg-dim: #888;
+	--border: #2a2a2a;
+	--accent: #fff;
+	--bg-input: #050505;
+	--font-mono: "JetBrains Mono", monospace;
+	--font-sans: "Space Grotesk", sans-serif;
+}
+
+[data-theme="light"] {
+	--bg: #f5f5f5;
+	--fg: #0a0a0a;
+	--fg-dim: #666;
+	--border: #ddd;
+	--accent: #000;
+	--bg-input: #fff;
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: var(--font-sans);
+	background: var(--bg);
+	color: var(--fg);
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 40px 20px;
+	line-height: 1.5;
+	transition:
+		background 0.3s,
+		color 0.3s;
+}
+
+.container {
+	width: 100%;
+	max-width: 520px;
+	position: relative;
+}
+
+.theme-toggle {
+	background: transparent;
+	border: 1px solid var(--border);
+	color: var(--fg);
+	width: 20px;
+	height: 20px;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.7rem;
+	transition: border-color 0.2s;
+	padding: 0;
+}
+
+.theme-toggle:hover {
+	border-color: var(--fg);
+}
+
+h1 {
+	font-family: var(--font-mono);
+	font-size: 1.1rem;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+	margin-bottom: 8px;
+	color: var(--fg);
+}
+
+.subtitle {
+	font-size: 0.8rem;
+	color: var(--fg-dim);
+	margin-bottom: 48px;
+	font-family: var(--font-mono);
+}
+
+.form-group {
+	margin-bottom: 24px;
+}
+
+label {
+	display: block;
+	font-size: 0.7rem;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	color: var(--fg-dim);
+	margin-bottom: 8px;
+	font-family: var(--font-mono);
+}
+
+select,
+input[type="text"],
+input[type="number"] {
+	width: 100%;
+	padding: 14px 16px;
+	background: transparent;
+	border: 1px solid var(--border);
+	color: var(--fg);
+	font-family: var(--font-mono);
+	font-size: 0.85rem;
+	outline: none;
+	transition: border-color 0.2s;
+	appearance: none;
+	border-radius: 0;
+}
+
+select {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 16px center;
+	padding-right: 40px;
+	cursor: pointer;
+}
+
+[data-theme="light"] select {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+
+select:focus,
+input[type="text"]:focus,
+input[type="number"]:focus {
+	border-color: var(--fg);
+}
+
+select option {
+	background: var(--bg);
+	color: var(--fg);
+}
+
+.row {
+	display: flex;
+	gap: 16px;
+}
+
+.row .form-group {
+	flex: 1;
+}
+
+.full-width {
+	width: 100%;
+}
+
+@media (max-width: 540px) {
+	.row {
+		flex-direction: column;
+	}
+}
+
+.divider {
+	height: 1px;
+	background: var(--border);
+	margin: 32px 0;
+}
+
+.output {
+	background: var(--bg-input);
+	border: 1px solid var(--border);
+	padding: 16px;
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--fg-dim);
+	word-break: break-all;
+	min-height: 52px;
+	line-height: 1.7;
+}
+
+.output .cmd {
+	color: var(--fg);
+}
+
+.output .flag {
+	color: #888;
+}
+
+.output .arg {
+	color: var(--fg);
+	font-weight: 500;
+}

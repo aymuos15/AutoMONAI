@@ -7,11 +7,10 @@ Guidelines for agentic coding agents (e.g. Claude, Copilot, Cursor) working in t
 ## Project Overview
 
 **AutoMONAI** is a Python medical image segmentation framework built on MONAI + PyTorch Lightning Fabric.
-It exposes three interfaces: a core Python CLI (`src/run.py`), a web GUI (`UI/gui/`), and a terminal
-UI (`UI/tui/`). A FastAPI server (`UI/server.py`, port 8888) bridges the GUI and TUI to the core
-library.
+It exposes two interfaces: a core Python CLI (`src/run.py`) and a web GUI (`UI/gui/`). A FastAPI server
+(`UI/server.py`, port 8888) bridges the GUI to the core library.
 
-Languages: **Python** (core library, FastAPI server, tests), **Go** (TUI), **HTML/CSS/JS** (web GUI).
+Languages: **Python** (core library, FastAPI server, tests), **HTML/CSS/JS** (web GUI).
 
 ---
 
@@ -22,11 +21,20 @@ src/            Core Python library (config, models, dataset, transforms, train,
   results.py    RunLogger — checkpoints, metrics CSV, config/summary JSON per run
   tests/        pytest test suite (test_models, test_losses, test_integration)
 UI/
-  server.py     FastAPI backend — serves GUI static files + /api/models, /api/datasets, /api/results
-  cli/          CLI entry points (gui.py, tui.py)
+  server.py     FastAPI app factory (~51 lines) — mounts routers, serves index.html, /static
+  routers/      Modularized API routes
+    config.py   GET /api/models, /api/datasets
+    launch.py   POST /api/launch, GET /api/launch/{status,logs}, POST /api/launch/stop
+    results.py  GET /api/results, DELETE /api/results/{dataset}/{model}/{timestamp}
+  cli/          CLI entry points (gui.py)
   gui/          Web interface (vanilla HTML/CSS/JS, no build step)
-    results.js  Results viewer with Chart.js loss/metric graphs
-  tui/          Terminal UI (Go, BubbleTea + lipgloss)
+    index.html  HTML structure
+    js/         Modularized JavaScript (7 modules)
+      api.js, command.js, ui-actions.js, theme.js, nav.js, search.js, init.js
+    styles/     Modularized CSS (6 modules)
+      base.css, components.css, augmentation.css, modals.css, results.css, launch.css
+    launch.js   Launch page UI (unchanged)
+    results.js  Results viewer with Chart.js graphs (unchanged)
 results/        Training run outputs (results/dataset/model/timestamp/{config,metrics,summary,checkpoints})
 pyproject.toml  Build config, dependencies, ruff, pytest, coverage settings
 ```
@@ -39,7 +47,6 @@ pyproject.toml  Build config, dependencies, ruff, pytest, coverage settings
 uv sync                        # install all deps from uv.lock
 uv pip install -e ".[dev]"     # editable install with dev extras
 automonai-gui                  # launch web GUI (FastAPI server + browser)
-automonai-tui                  # build and launch terminal UI
 automonai-train --dataset Dataset001_Cellpose --model unet --epochs 10
 ```
 
@@ -81,10 +88,6 @@ prek install                   # install hooks
 ### UI-Specific
 
 ```bash
-# Go (TUI)
-cd UI/tui && go vet ./...      # Go static analysis
-cd UI/tui && gofumpt -w .      # format Go
-
 # JavaScript (GUI)
 biome check UI/gui/            # lint JS (check only)
 biome check --write UI/gui/    # lint + format JS
@@ -94,9 +97,6 @@ biome format --write UI/gui/   # format JS only
 Install UI lint tools:
 
 ```bash
-# Go formatter
-go install mvdan.cc/gofumpt@latest
-
 # JavaScript linter - Linux
 curl -L https://github.com/biomejs/biome/releases/latest/download/biome-linux-x64 -o ~/.local/bin/biome
 chmod +x ~/.local/bin/biome
@@ -142,8 +142,8 @@ raise ValueError(f"Unknown model: {model_name}. Available: {list(MODELS.keys())}
 `except Exception: continue` is acceptable only in config-discovery loops where a bad file should
 be silently skipped. Avoid bare `except` elsewhere.
 
-**Docstrings** — required (one-line) for `UI/server.py` route handlers; optional but welcome for
-public `src/` functions; required (one-line) for test classes.
+**Docstrings** — required (one-line) for all FastAPI route handlers in `UI/server.py` and `UI/routers/*.py`;
+optional but welcome for public `src/` functions; required (one-line) for test classes.
 
 ---
 
@@ -171,31 +171,34 @@ class TestFoo:
 
 ---
 
-## TUI / GUI Parity
-
-**The TUI (`UI/tui/main.go`) and GUI (`UI/gui/`) must maintain near-identical user interfaces.**
-Any new field, option, section, or workflow added to one must be mirrored in the other.
-
-- Same parameters, same labels, same logical order in both surfaces
-- Both generate a semantically equivalent `python run.py ...` CLI command
-- Both fetch `/api/models` and `/api/datasets` as the single source of truth
-- Visual alignment: TUI uses lipgloss `"0"`/`"15"` to mirror the GUI's dark theme (`#0a0a0a`)
-- Both share the same three-page layout: **Generate** (form), **Docs**, and **Results**
-
----
-
-## Go (TUI) Style
-
-- `gofmt` formatting (`go fmt ./...`)
-- BubbleTea Elm-style: `Model`, `Init()`, `Update()`, `View()` — keep side effects in `Cmd`
-- lipgloss styles as package-level `var` blocks at top of file
-- Field definitions (label, options, current value) in a slice to share ordering with the CLI
-
----
-
 ## JavaScript (GUI) Style
 
 - Vanilla ES2020, no build step, no npm
 - `const` by default, `let` when reassignment is needed, never `var`
 - Fetch API for all HTTP calls; handle errors with `.catch()`
 - DOM updates via `textContent` / `value` — avoid `innerHTML` with user data
+
+### GUI Module Organization (Feb 27, 2026)
+
+`UI/gui/` is modularized into 7 focused JS files + 6 CSS files:
+
+**JavaScript modules** (`UI/gui/js/`):
+- `api.js` — data loading (datasets, models, classes)
+- `command.js` — command building & formatting (main bulk)
+- `ui-actions.js` — copy to clipboard, modal open/close
+- `theme.js` — dark/light theme toggle
+- `nav.js` — page & sub-tab navigation
+- `search.js` — tab search modal logic
+- `init.js` — global keydown listeners, DOMContentLoaded setup
+
+Load order in `index.html`: `theme` → `ui-actions` → `api` → `command` → `nav` → `search` → `results.js` → `launch.js` → `init.js`
+
+**CSS modules** (`UI/gui/styles/`):
+- `base.css` — CSS variables, resets, forms (must load first; defines `--bg`, `--fg`, etc.)
+- `components.css` — buttons, badges, nav tabs, page/sub-page show/hide
+- `augmentation.css` — augmentation controls, metrics checkboxes, doc sections
+- `modals.css` — tab search modal, command modal styles
+- `results.css` — results page all styles
+- `launch.css` — launch page all styles
+
+Load order: `base.css` first (defines vars), then others in any order (no cascade dependencies)

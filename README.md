@@ -1,6 +1,6 @@
 # AutoMONAI
 
-Medical image segmentation library with web and terminal UIs.
+Medical image segmentation library with a web UI for interactive training and result visualization.
 
 ## Quick Start
 
@@ -10,22 +10,42 @@ uv pip install -e .
 
 # Launch Web UI (opens in browser)
 automonai-gui
-
-# Launch Terminal UI (in another terminal)
-automonai-tui
 ```
 
 The server runs on `http://localhost:8888` with API docs at `/docs`.
 
-## API
+## Features
 
-- Model selection (UNet, Attention UNet, SegResNet, SwinUNETR)
-- Dataset selection with auto-discovery from nnUNet format
-- Training configuration (epochs, batch size, learning rate, etc.)
-- Dataset classes (Dataset, CacheDataset, PersistentDataset, SmartCacheDataset)
-- Augmentation selection
-- 2D and 3D image support
-- GPU/CPU device selection with automated scaling via lightning fabric
+### Generate Tab
+- **Model selection**: UNet, Attention UNet, SegResNet, SwinUNETR
+- **Dataset selection**: Auto-discovery from nnUNet format
+- **Training configuration**: Epochs, batch size, learning rate, optimizer, LR scheduler
+- **Dataset classes**: Dataset, CacheDataset, PersistentDataset, SmartCacheDataset
+- **Preprocessing**: MinMax normalization, Z-score normalization, center/random cropping
+- **Augmentation**: Rotation and flip transforms with probability control
+- **Metrics**: Dice and IoU (Intersection over Union)
+- **Loss functions**: Dice, Cross Entropy, Focal Loss
+- **Device**: GPU (CUDA/BF16/FP16) or CPU with mixed precision support
+- **2D and 3D** image support with automated scaling via PyTorch Lightning Fabric
+
+### Launch Tab
+- **Live command preview** synced from Generate tab
+- **Real-time training execution** with streamed logs via Server-Sent Events (SSE)
+- **Progress tracking** with status indicator (Idle/Running)
+- **Stop training** with graceful shutdown (terminate → kill fallback)
+- **Auto-refresh results** every 4 seconds during training
+
+### Results Tab
+- **Run history** with filtering by dataset/model/timestamp
+- **Loss curve visualization** with interactive Chart.js graphs
+- **Metric tracking** (Dice, IoU, etc.) displayed per epoch
+- **Run deletion** to clean up old training results
+- **Incremental chart updates** for in-progress runs
+
+### Additional
+- **Keyboard shortcuts**: `Ctrl+Shift+K` (tab search), `Alt+C` (command modal), `Ctrl+Shift+C` (copy)
+- **Dark/Light theme** with localStorage persistence
+- **Responsive design** for desktop browsing
 
 ## Development
 
@@ -37,13 +57,19 @@ prek install
 # Lint & format
 ruff check src/              # Python
 ruff format src/
-go vet ./UI/tui/...         # Go
-gofumpt -w ./UI/tui/
 biome check ./UI/gui/       # JavaScript
+biome check --write ./UI/gui/
 
 # Test
 uv run pytest src/tests/
 ```
+
+### Code Organization
+
+See [AGENTS.md](./AGENTS.md) for detailed coding guidelines:
+- **Python style**: Snake case, f-strings, line length 100
+- **JavaScript modules**: 7 focused modules in `UI/gui/js/` (API, command building, UI actions, navigation, search, theme, initialization)
+- **CSS modules**: 6 focused stylesheets in `UI/gui/styles/` (base, components, augmentation, modals, results, launch)
 
 ## Project Structure
 
@@ -56,15 +82,29 @@ uv run pytest src/tests/
 │   ├── inference.py         # Inference utilities
 │   ├── cli.py               # CLI tools
 │   ├── config.py            # Configuration
+│   ├── results.py           # RunLogger (checkpoints, metrics CSV, summaries)
 │   └── tests/               # Comprehensive test suite
-├── UI/                       # User interfaces
-│   ├── server.py            # FastAPI backend (serves both UIs)
+├── UI/                       # Web User Interface
+│   ├── server.py            # FastAPI app factory (51 lines)
+│   ├── routers/             # Modularized API routes
+│   │   ├── config.py       # Models & datasets endpoints
+│   │   ├── launch.py       # Training launch & streaming logs
+│   │   └── results.py      # Results retrieval & deletion
 │   ├── cli/                 # CLI entry points
-│   │   ├── gui.py          # Web UI launcher
-│   │   └── tui.py          # Terminal UI launcher
-│   ├── gui/                 # Web UI (HTML, CSS, JS)
-│   └── tui/                 # Terminal UI (Go + Charmbracelet)
-├── predictions/             # Output directory for inference results
-├── pyproject.toml            # Project config & dependencies
-└── .pre-commit-config.yaml   # Pre-commit hooks (prek)
+│   │   └── gui.py          # Web UI launcher
+│   └── gui/                 # Web UI (HTML, CSS, JS)
+│       ├── index.html      # Main HTML
+│       ├── js/             # Modularized JavaScript (7 modules)
+│       │   ├── api.js, command.js, ui-actions.js
+│       │   ├── theme.js, nav.js, search.js, init.js
+│       ├── styles/         # Modularized CSS (6 stylesheets)
+│       │   ├── base.css, components.css, augmentation.css
+│       │   ├── modals.css, results.css, launch.css
+│       ├── launch.js       # Launch tab interactivity
+│       └── results.js      # Results viewer with Chart.js
+├── results/                 # Training run outputs
+│   └── {dataset}/{model}/{timestamp}/  # Config, metrics, checkpoints per run
+├── pyproject.toml           # Project config & dependencies
+├── AGENTS.md                # Coding guidelines for agents
+└── .pre-commit-config.yaml  # Pre-commit hooks (prek)
 ```

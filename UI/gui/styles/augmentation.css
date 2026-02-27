@@ -1,0 +1,187 @@
+.aug-section {
+	border: 1px solid var(--border);
+	padding: 16px;
+}
+
+.aug-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 12px 0;
+	border-bottom: 1px solid var(--border);
+}
+
+.aug-row:last-child {
+	border-bottom: none;
+	padding-bottom: 0;
+}
+
+.aug-row:first-child {
+	padding-top: 0;
+}
+
+.aug-toggle {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.aug-toggle input[type="checkbox"] {
+	width: 20px;
+	height: 20px;
+	appearance: none;
+	border: 1px solid var(--border);
+	background: transparent;
+	cursor: pointer;
+	position: relative;
+	transition: all 0.2s;
+}
+
+.aug-toggle input[type="checkbox"]:checked {
+	background: var(--fg);
+	border-color: var(--fg);
+}
+
+.aug-toggle input[type="checkbox"]:checked::after {
+	content: "✓";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: var(--bg);
+	font-size: 12px;
+	font-weight: bold;
+}
+
+.aug-toggle label {
+	margin-bottom: 0;
+	text-transform: none;
+	font-size: 0.85rem;
+	letter-spacing: 0;
+	color: var(--fg);
+	cursor: pointer;
+}
+
+.metrics-checkboxes {
+	display: flex;
+	gap: 24px;
+	border: 1px solid var(--border);
+	padding: 16px;
+}
+
+.metrics-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.metrics-checkbox input[type="checkbox"] {
+	width: 20px;
+	height: 20px;
+	appearance: none;
+	border: 1px solid var(--border);
+	background: transparent;
+	cursor: pointer;
+	position: relative;
+	transition: all 0.2s;
+}
+
+.metrics-checkbox input[type="checkbox"]:checked {
+	background: var(--fg);
+	border-color: var(--fg);
+}
+
+.metrics-checkbox input[type="checkbox"]:checked::after {
+	content: "✓";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: var(--bg);
+	font-size: 12px;
+	font-weight: bold;
+}
+
+.metrics-checkbox label {
+	margin-bottom: 0;
+	text-transform: none;
+	font-size: 0.85rem;
+	letter-spacing: 0;
+	color: var(--fg);
+	cursor: pointer;
+}
+
+.aug-prob {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.aug-prob label {
+	margin-bottom: 0;
+	text-transform: none;
+	font-size: 0.7rem;
+	letter-spacing: 0.05em;
+}
+
+.aug-prob input[type="range"] {
+	width: 80px;
+	height: 4px;
+	appearance: none;
+	background: var(--border);
+	cursor: pointer;
+	border: none;
+	padding: 0;
+}
+
+.aug-prob input[type="range"]::-webkit-slider-thumb {
+	appearance: none;
+	width: 14px;
+	height: 14px;
+	background: var(--fg);
+	cursor: pointer;
+}
+
+.aug-prob span {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--fg-dim);
+	min-width: 30px;
+	text-align: right;
+}
+
+h2 {
+	font-family: var(--font-mono);
+	font-size: 0.95rem;
+	font-weight: 600;
+	margin: 32px 0 16px 0;
+	color: var(--fg);
+}
+
+h3 {
+	font-family: var(--font-sans);
+	font-size: 0.9rem;
+	font-weight: 500;
+	margin: 0;
+	color: var(--fg);
+}
+
+.doc-section {
+	margin-bottom: 16px;
+	padding: 12px;
+	background: var(--bg-input);
+	border: 1px solid var(--border);
+}
+
+.doc-section p {
+	font-size: 0.8rem;
+	color: var(--fg-dim);
+	margin: 4px 0;
+}
+
+.doc-info {
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	color: var(--fg-dim);
+}
