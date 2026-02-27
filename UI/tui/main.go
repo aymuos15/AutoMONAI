@@ -669,7 +669,7 @@ func (m model) renderCommandTab() string {
 	var content string
 	content += "\n"
 	content += labelStyle.Render("COMMAND") + "\n\n"
-	content += cmdStyle.Width(cw - 3).Render(m.generateCommand()) + "\n\n"
+	content += cmdStyle.Width(cw-3).Render(m.generateCommand()) + "\n\n"
 	content += buttonStyle.Width(cw).Align(lipgloss.Center).Render("Copy (Ctrl+Shift+C)") + "\n"
 
 	return m.assembleScreen(header, content, footer)
@@ -920,7 +920,7 @@ func (m model) generateCommand() string {
 
 	h := cmdHighlight.Render
 
-	cmd := fmt.Sprintf("python run.py --dataset %s --model %s --metrics %s --loss %s",
+	cmd := fmt.Sprintf("python3 -m src.run --dataset %s --model %s --metrics %s --loss %s",
 		h(vals["DATASET"]), h(vals["MODEL"]), h(vals["METRICS"]), h(vals["LOSS"]))
 
 	if vals["TRAIN DATASET CLASS"] != "Dataset" {

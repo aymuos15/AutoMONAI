@@ -20,6 +20,7 @@ from .dataset import (
 )
 from .models import get_model
 from .inference import infer
+from .results import RunLogger
 from .train import train_one_epoch, get_loss
 from .transforms import get_transforms
 
@@ -82,6 +83,30 @@ def main():
     if args.cache_dir:
         print(f"Cache dir: {args.cache_dir}")
 
+    # Initialize run logger
+    logger = RunLogger(dataset_name, args.model)
+
+    # Save configuration
+    config = {
+        "dataset": dataset_name,
+        "model": args.model,
+        "epochs": args.epochs,
+        "batch_size": args.batch_size,
+        "learning_rate": args.lr,
+        "image_size": args.img_size,
+        "num_workers": args.num_workers,
+        "loss": args.loss,
+        "metrics": args.metrics,
+        "device": args.device,
+        "spatial_dims": spatial_dims,
+        "train_dataset_class": args.train_dataset_class,
+        "inference_dataset_class": args.inference_dataset_class,
+        "normalization": args.norm,
+        "crop": args.crop,
+        "augmentation_enabled": args.augment,
+    }
+    logger.save_config(config)
+
     # Initialize Fabric for device and distributed training management
     fabric = Fabric(accelerator="auto" if not args.device else args.device)
     fabric.launch()
@@ -140,9 +165,28 @@ def main():
     train_loader, test_loader = fabric.setup_dataloaders(train_loader, test_loader)
 
     print(f"\nTraining for {args.epochs} epoch(s)...")
+    best_loss = float("inf")
     for epoch in range(args.epochs):
         result = train_one_epoch(fabric, model, train_loader, loss_fn, optimizer, args.metrics)
         loss = result["loss"]
+
+        # Log epoch metrics
+        epoch_metrics = {"loss": loss}
+        if "dice" in result:
+            epoch_metrics["dice"] = result["dice"]
+        if "iou" in result:
+            epoch_metrics["iou"] = result["iou"]
+
+        logger.log_epoch(epoch, epoch_metrics)
+
+        # Check if best model
+        is_best = loss < best_loss
+        if is_best:
+            best_loss = loss
+
+        # Save checkpoint
+        logger.save_checkpoint(model, epoch, optimizer, is_best=is_best)
+
         log_msg = f"Epoch {epoch + 1}/{args.epochs} - Loss: {loss:.4f}"
         if "dice" in result:
             log_msg += f" - Dice: {result['dice']:.4f}"
@@ -150,12 +194,25 @@ def main():
             log_msg += f" - IoU: {result['iou']:.4f}"
         print(log_msg)
 
-    save_dir = Path(args.output_dir) / dataset_name / args.model
-    print(f"\nRunning inference on {len(test_files)} test samples...")
-    print(f"Saving predictions to: {save_dir}")
-    infer(fabric, model, test_loader, str(save_dir), spatial_dims)
+    # Save final summary
+    summary = {
+        "total_epochs": args.epochs,
+        "best_loss": best_loss,
+        "final_metrics": epoch_metrics,
+        "dataset": dataset_name,
+        "model": args.model,
+    }
+    logger.save_final_summary(summary)
 
-    print("\nDone!")
+    if args.save_predictions:
+        save_dir = Path(args.output_dir) / dataset_name / args.model
+        print(f"\nRunning inference on {len(test_files)} test samples...")
+        print(f"Saving predictions to: {save_dir}")
+        infer(fabric, model, test_loader, str(save_dir), spatial_dims)
+
+    print(f"\nTraining results saved to: {logger.run_dir}")
+    logger.close()
+    print("Done!")
 
 
 if __name__ == "__main__":

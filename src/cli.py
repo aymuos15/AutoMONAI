@@ -172,6 +172,11 @@ def get_parser():
         help=f"Loss function to use. Available: {', '.join(LOSSES_AVAILABLE)}",
     )
     parser.add_argument(
+        "--save_predictions",
+        action="store_true",
+        help="Run inference and save predictions after training",
+    )
+    parser.add_argument(
         "--augment",
         action="store_true",
         help="Enable data augmentation",

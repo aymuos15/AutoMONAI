@@ -83,7 +83,7 @@ function formatRawCommand(cmd) {
 		image: [],
 		preprocessing: [],
 		augmentation: [],
-		output: []
+		output: [],
 	};
 
 	for (let i = 1; i < parts.length; i++) {
@@ -111,7 +111,15 @@ function formatRawCommand(cmd) {
 	// Build formatted raw command
 	let raw = `${baseCmd} \\\n`;
 
-	const groupOrder = ["dataset", "metrics", "training", "image", "preprocessing", "augmentation", "output"];
+	const groupOrder = [
+		"dataset",
+		"metrics",
+		"training",
+		"image",
+		"preprocessing",
+		"augmentation",
+		"output",
+	];
 	for (const groupName of groupOrder) {
 		const items = groups[groupName];
 		if (items.length === 0) continue;
@@ -150,7 +158,7 @@ function formatCommand(cmd) {
 		image: [],
 		preprocessing: [],
 		augmentation: [],
-		output: []
+		output: [],
 	};
 
 	for (let i = 1; i < parts.length; i++) {
@@ -178,7 +186,15 @@ function formatCommand(cmd) {
 	// Build formatted HTML
 	let html = `<span class="cmd">${baseCmd}</span> \\<br>`;
 
-	const groupOrder = ["dataset", "metrics", "training", "image", "preprocessing", "augmentation", "output"];
+	const groupOrder = [
+		"dataset",
+		"metrics",
+		"training",
+		"image",
+		"preprocessing",
+		"augmentation",
+		"output",
+	];
 	for (const groupName of groupOrder) {
 		const items = groups[groupName];
 		if (items.length === 0) continue;
@@ -237,7 +253,7 @@ function updateCommand() {
 	document.getElementById("aug_rotate_prob_val").textContent = aug_rotate_prob;
 	document.getElementById("aug_flip_prob_val").textContent = aug_flip_prob;
 
-	let command = `python run.py --dataset ${dataset} --model ${model} --metrics ${metrics} --loss ${loss}`;
+	let command = `python3 -m src.run --dataset ${dataset} --model ${model} --metrics ${metrics} --loss ${loss}`;
 
 	if (trainDataset && trainDataset !== "Dataset") {
 		command += ` --train_dataset_class ${trainDataset}`;
@@ -313,14 +329,23 @@ function updateSummaryPanel(
 	augFlip,
 	augFlipProb,
 ) {
-	console.log("updateSummaryPanel: START", {augmentEnabled, augRotate, augFlip});
-	
+	console.log("updateSummaryPanel: START", {
+		augmentEnabled,
+		augRotate,
+		augFlip,
+	});
+
 	const preprocBadges = document.getElementById("summary-preproc-badges");
 	const augBadges = document.getElementById("summary-aug-badges");
 	const preprocRow = document.getElementById("summary-preproc");
 	const augRow = document.getElementById("summary-aug");
 
-	console.log("Elements found:", {preprocBadges, augBadges, preprocRow, augRow});
+	console.log("Elements found:", {
+		preprocBadges,
+		augBadges,
+		preprocRow,
+		augRow,
+	});
 
 	if (!preprocBadges || !augBadges || !preprocRow || !augRow) {
 		console.error("Summary panel elements not found!");
@@ -336,7 +361,12 @@ function updateSummaryPanel(
 	if (cropRandom)
 		preprocHtml += '<span class="badge badge-green">Random</span>';
 
-	console.log("augmentEnabled:", augmentEnabled, "type:", typeof augmentEnabled);
+	console.log(
+		"augmentEnabled:",
+		augmentEnabled,
+		"type:",
+		typeof augmentEnabled,
+	);
 	console.log("augRotate:", augRotate, "augFlip:", augFlip);
 
 	let augHtml = "";
@@ -366,7 +396,9 @@ function copyCommand() {
 	const source = document.getElementById("command-display");
 	const command = source ? source.dataset.raw : "";
 	navigator.clipboard.writeText(command).then(() => {
-		const btn = document.activeElement.closest(".btn") || document.querySelector(".sub-page.active .btn");
+		const btn =
+			document.activeElement.closest(".btn") ||
+			document.querySelector(".sub-page.active .btn");
 		if (btn) {
 			btn.textContent = "Copied!";
 			setTimeout(() => {
@@ -417,8 +449,12 @@ function switchPage(pageName) {
 	});
 
 	document.getElementById(`${pageName}-page`).classList.add("active");
-
 	event.target.classList.add("active");
+
+	// Load results if switching to results page
+	if (pageName === "results") {
+		loadResults();
+	}
 }
 
 function switchSubTab(subTabName) {
@@ -536,7 +572,9 @@ document.addEventListener("keydown", (e) => {
 	if (e.altKey && e.key.toLowerCase() === "c") {
 		e.preventDefault();
 		const modal = document.getElementById("command-modal");
-		modal.classList.contains("active") ? closeCommandModal() : openCommandModal();
+		modal.classList.contains("active")
+			? closeCommandModal()
+			: openCommandModal();
 	}
 });
 

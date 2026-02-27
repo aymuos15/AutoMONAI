@@ -29,6 +29,7 @@ dependencies = [
     "nibabel>=5.0.0",
     "Pillow>=9.0.0",
     "numpy>=1.20.0",
+    "einops>=0.7.0",
     "fastapi>=0.100.0",
     "uvicorn>=0.23.0",
     "textual>=0.45.0",
@@ -52,6 +53,7 @@ dev = [
 [project.scripts]
 automonai-gui = "UI.cli.gui:main"
 automonai-tui = "UI.cli.tui:main"
+automonai-train = "src.run:main"
 
 [project.urls]
 Homepage = "https://github.com/yourusername/MonaiUI"

@@ -8,12 +8,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 </head>
 <body>
     <div class="container">
         <div class="nav-tabs">
             <button type="button" class="nav-tab active" onclick="switchPage('generate')">Generate</button>
             <button type="button" class="nav-tab" onclick="switchPage('docs')">Docs</button>
+            <button type="button" class="nav-tab" onclick="switchPage('results')">Results</button>
         </div>
 
         <div id="generate-page" class="page active">
@@ -396,6 +398,38 @@
             </div>
         </div>
 
+        <div id="results-page" class="page">
+            <div class="results-search">
+                <input type="text" id="results-search" placeholder="Filter runs..." oninput="filterResults()" autocomplete="off">
+            </div>
+
+            <div id="results-list">
+                <div class="results-empty">Loading...</div>
+            </div>
+
+            <div id="results-viewer" style="display: none;">
+                <div class="results-viewer-header">
+                    <span id="results-title" class="results-title"></span>
+                    <button type="button" class="results-back" onclick="closeResultsViewer()">&larr; Back</button>
+                </div>
+
+                <div class="results-section">
+                    <label>Loss</label>
+                    <div class="results-chart-wrap">
+                        <canvas id="loss-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="results-section">
+                    <label>Metrics</label>
+                    <div class="results-chart-wrap">
+                        <canvas id="metrics-chart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
         <div class="footer">
             <div class="footer-content">
                 <div class="footer-start">
@@ -436,5 +470,6 @@
     </div>
 
     <script src="/static/script.js?v=2"></script>
+    <script src="/static/results.js?v=1"></script>
 </body>
 </html>
