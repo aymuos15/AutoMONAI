@@ -43,16 +43,27 @@ function displayResultsList(results) {
 		const item = document.createElement("div");
 		item.className = "results-item";
 		item.innerHTML = `
-			<div class="results-item-header">
-				<span class="results-item-title">${result.dataset} / ${result.model}</span>
-				<span class="results-item-date">${formatDate(result.timestamp)}</span>
+			<div class="results-item-content">
+				<div class="results-item-header">
+					<span class="results-item-title">${result.dataset} / ${result.model}</span>
+					<span class="results-item-date">${formatDate(result.timestamp)}</span>
+				</div>
+				<div class="results-item-stats">
+					<span>${result.epochs} epoch${result.epochs !== 1 ? "s" : ""}</span>
+					<span>loss ${result.best_loss.toFixed(4)}</span>
+				</div>
 			</div>
-			<div class="results-item-stats">
-				<span>${result.epochs} epoch${result.epochs !== 1 ? "s" : ""}</span>
-				<span>loss ${result.best_loss.toFixed(4)}</span>
-			</div>
+			<button class="results-item-delete" title="Delete this run">🗑</button>
 		`;
 		item.onclick = () => viewResult(result);
+
+		// Delete button click handler (stop propagation to prevent opening the result)
+		const deleteBtn = item.querySelector(".results-item-delete");
+		deleteBtn.onclick = (e) => {
+			e.stopPropagation();
+			deleteResult(result);
+		};
+
 		list.appendChild(item);
 	});
 }
@@ -84,6 +95,36 @@ function closeResultsViewer() {
 		metricsChart.destroy();
 		metricsChart = null;
 	}
+}
+
+async function deleteResult(result) {
+	const confirmDelete = confirm(
+		`Delete run: ${result.dataset} / ${result.model}?\n\nThis cannot be undone.`
+	);
+	if (!confirmDelete) return;
+
+	try {
+		const res = await fetch(
+			`/api/results/${result.dataset}/${result.model}/${result.timestamp}`,
+			{method: "DELETE"}
+		);
+
+		if (!res.ok) {
+			alert("Failed to delete result");
+			return;
+		}
+
+		// Refresh list
+		loadResults();
+	} catch (e) {
+		alert(`Error: ${e.message}`);
+	}
+}
+
+async function deleteCurrentResult() {
+	if (!currentResult) return;
+	deleteResult(currentResult);
+	closeResultsViewer();
 }
 
 function chartColors() {
