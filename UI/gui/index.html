@@ -85,6 +85,10 @@
                         <label>Batch Size</label>
                         <input type="number" id="batch_size" value="4" min="1" oninput="updateCommand()">
                     </div>
+                    <div class="form-group">
+                        <label>Image Size</label>
+                        <input type="number" id="img_size" value="128" min="32" oninput="updateCommand()">
+                    </div>
                 </div>
 
                 <div class="row">
@@ -93,14 +97,33 @@
                         <input type="number" id="lr" value="0.0001" step="0.0001" oninput="updateCommand()">
                     </div>
                     <div class="form-group">
-                        <label>Image Size</label>
-                        <input type="number" id="img_size" value="128" min="32" oninput="updateCommand()">
+                        <label>Optimizer</label>
+                        <select id="optimizer" onchange="updateCommand()">
+                            <option value="adam" selected>Adam</option>
+                            <option value="adamw">AdamW</option>
+                            <option value="sgd">SGD</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Workers</label>
+                        <input type="number" id="num_workers" value="0" min="0" oninput="updateCommand()">
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Workers</label>
-                    <input type="number" id="num_workers" value="0" min="0" oninput="updateCommand()">
+                <div class="row">
+                    <div class="form-group">
+                        <label>LR Scheduler</label>
+                        <select id="scheduler" onchange="updateCommand()">
+                            <option value="none" selected>None</option>
+                            <option value="cosine">Cosine</option>
+                            <option value="step">Step</option>
+                            <option value="plateau">Plateau</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Patience (X = infinite)</label>
+                        <input type="text" id="patience" value="X" oninput="updateCommand()" placeholder="X or number">
+                    </div>
                 </div>
             </div>
 
@@ -194,12 +217,22 @@
             </div>
 
             <div id="sub-device" class="sub-page">
-                <div class="form-group">
-                    <label>Device</label>
-                    <select id="device" onchange="updateCommand()">
-                        <option value="cuda">CUDA</option>
-                        <option value="cpu">CPU</option>
-                    </select>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Device</label>
+                        <select id="device" onchange="updateCommand()">
+                            <option value="cuda">CUDA</option>
+                            <option value="cpu">CPU</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Mixed Precision</label>
+                        <select id="mixed_precision" onchange="updateCommand()">
+                            <option value="no" selected>No</option>
+                            <option value="fp16">FP16</option>
+                            <option value="bf16">BF16</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -296,6 +329,27 @@
                     <h3>Workers</h3>
                     <p>Number of data loading workers</p>
                     <p class="doc-info">Default: 0</p>
+                </div>
+                <div class="doc-section">
+                    <h3>Optimizer</h3>
+                    <p>Choice of optimizer algorithm for training</p>
+                    <p class="doc-info">Adam: Adaptive learning rate with momentum. Default, good general-purpose optimizer.</p>
+                    <p class="doc-info">AdamW: Adam with decoupled weight decay. Better generalization in many cases.</p>
+                    <p class="doc-info">SGD: Stochastic Gradient Descent with momentum. Simple, effective for some tasks.</p>
+                </div>
+                <div class="doc-section">
+                    <h3>LR Scheduler</h3>
+                    <p>Learning rate schedule for adjusting learning rate during training</p>
+                    <p class="doc-info">none: Constant learning rate. Default.</p>
+                    <p class="doc-info">cosine: Cosine annealing - gradually decreases LR using cosine function.</p>
+                    <p class="doc-info">step: Step decay - decreases LR at fixed intervals.</p>
+                    <p class="doc-info">plateau: ReduceLROnPlateau - decreases LR when validation loss plateaus.</p>
+                </div>
+                <div class="doc-section">
+                    <h3>Patience</h3>
+                    <p>X = no early stopping (default). Number = enable early stopping with specified patience value.</p>
+                    <p class="doc-info">X: No early stopping (default). Training continues for all epochs.</p>
+                    <p class="doc-info">3-20: Enable early stopping. Stops if validation loss doesn't improve for N epochs.</p>
                 </div>
             </div>
 
@@ -394,6 +448,13 @@
                 <div class="doc-section">
                     <h3>CPU</h3>
                     <p>Use CPU for computation</p>
+                </div>
+                <div class="doc-section">
+                    <h3>Mixed Precision</h3>
+                    <p>Use lower precision (16-bit) for faster training and reduced memory</p>
+                    <p class="doc-info">no: Full precision (32-bit). Default, stable.</p>
+                    <p class="doc-info">fp16: Half precision (16-bit). Faster but less stable.</p>
+                    <p class="doc-info">bf16: Brain floating point (16-bit). Better stability than fp16, newer hardware.</p>
                 </div>
             </div>
         </div>

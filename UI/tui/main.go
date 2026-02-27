@@ -72,6 +72,10 @@ const (
 	fieldAugRotateProb = 19
 	fieldAugFlip       = 20
 	fieldAugFlipProb   = 21
+	fieldOptimizer     = 22
+	fieldMixedPrecision = 23
+	fieldScheduler     = 24
+	fieldPatience      = 25
 )
 
 // Per-sub-tab grid layouts for wide terminals. Each entry is a row of field indices.
@@ -83,7 +87,7 @@ var subTabWideGrids = [][][]int{
 	// Dataset Classes (2)
 	{{fieldDataset}, {fieldTrainDS, fieldInferDS}, {fieldOutputDir}},
 	// Training Options (3)
-	{{fieldEpochs, fieldBatchSize}, {fieldLR, fieldImgSize}, {fieldWorkers}},
+	{{fieldEpochs, fieldBatchSize, fieldImgSize}, {fieldLR, fieldOptimizer, fieldWorkers}, {fieldScheduler, fieldPatience}},
 	// Preprocessing (4)
 	{{fieldNormMinmax, fieldNormZscore}, {fieldCropCenter, fieldCropRandom}},
 	// Augmentation (5)
@@ -93,7 +97,7 @@ var subTabWideGrids = [][][]int{
 	// Loss Functions (7)
 	{{fieldLoss}},
 	// Device (8)
-	{{fieldDevice}},
+	{{fieldDevice, fieldMixedPrecision}},
 	// Active Transforms (9) - no navigable fields
 	{},
 }
@@ -107,7 +111,7 @@ var subTabNarrowGrids = [][][]int{
 	// Dataset Classes (2)
 	{{fieldDataset}, {fieldTrainDS}, {fieldInferDS}, {fieldOutputDir}},
 	// Training Options (3)
-	{{fieldEpochs}, {fieldBatchSize}, {fieldLR}, {fieldImgSize}, {fieldWorkers}},
+	{{fieldEpochs}, {fieldBatchSize}, {fieldImgSize}, {fieldLR}, {fieldOptimizer}, {fieldWorkers}, {fieldScheduler}, {fieldPatience}},
 	// Preprocessing (4)
 	{{fieldNormMinmax}, {fieldNormZscore}, {fieldCropCenter}, {fieldCropRandom}},
 	// Augmentation (5)
@@ -117,7 +121,7 @@ var subTabNarrowGrids = [][][]int{
 	// Loss Functions (7)
 	{{fieldLoss}},
 	// Device (8)
-	{{fieldDevice}},
+	{{fieldDevice, fieldMixedPrecision}},
 	// Active Transforms (9) - no navigable fields
 	{},
 }
@@ -131,7 +135,7 @@ var subTabWideLabels = [][][]string{
 	// Dataset Classes (2)
 	{{"DATASET"}, {"TRAIN DATASET", "INFERENCE DATASET"}, {"OUTPUT DIR"}},
 	// Training Options (3)
-	{{"EPOCHS", "BATCH SIZE"}, {"LEARNING RATE", "IMAGE SIZE"}, {"WORKERS"}},
+	{{"EPOCHS", "BATCH SIZE", "IMAGE SIZE"}, {"LEARNING RATE", "OPTIMIZER", "WORKERS"}, {"SCHEDULER", "PATIENCE"}},
 	// Preprocessing (4)
 	{{"MINMAX NORM", "ZSCORE NORM"}, {"CENTER CROP", "RANDOM CROP"}},
 	// Augmentation (5)
@@ -141,7 +145,7 @@ var subTabWideLabels = [][][]string{
 	// Loss Functions (7)
 	{{"LOSS"}},
 	// Device (8)
-	{{"DEVICE"}},
+	{{"DEVICE", "MIXED PRECISION"}},
 }
 
 // Per-sub-tab row labels for narrow terminals.
@@ -153,7 +157,7 @@ var subTabNarrowLabels = [][][]string{
 	// Dataset Classes (2)
 	{{"DATASET"}, {"TRAIN DATASET CLASS"}, {"INFERENCE DATASET CLASS"}, {"OUTPUT DIR"}},
 	// Training Options (3)
-	{{"EPOCHS"}, {"BATCH SIZE"}, {"LEARNING RATE"}, {"IMAGE SIZE"}, {"WORKERS"}},
+	{{"EPOCHS"}, {"BATCH SIZE"}, {"IMAGE SIZE"}, {"LEARNING RATE"}, {"OPTIMIZER"}, {"WORKERS"}, {"SCHEDULER"}, {"PATIENCE"}},
 	// Preprocessing (4)
 	{{"MINMAX NORM"}, {"ZSCORE NORM"}, {"CENTER CROP"}, {"RANDOM CROP"}},
 	// Augmentation (5)
@@ -163,7 +167,7 @@ var subTabNarrowLabels = [][][]string{
 	// Loss Functions (7)
 	{{"LOSS"}},
 	// Device (8)
-	{{"DEVICE"}},
+	{{"DEVICE", "MIXED PRECISION"}},
 }
 
 // collapseThreshold is the minimum content width before switching to single-column layout.
@@ -330,6 +334,10 @@ func newModel() model {
 		{label: "AUG ROTATE PROB", value: "0.5", options: []string{}, isText: true},
 		{label: "AUG FLIP", value: "false", options: []string{"false", "true"}, isText: false},
 		{label: "AUG FLIP PROB", value: "0.5", options: []string{}, isText: true},
+		{label: "OPTIMIZER", value: "adam", options: []string{"adam", "adamw", "sgd"}, isText: false},
+		{label: "MIXED PRECISION", value: "no", options: []string{"no", "fp16", "bf16"}, isText: false},
+		{label: "SCHEDULER", value: "none", options: []string{"none", "cosine", "step", "plateau"}, isText: false},
+		{label: "PATIENCE", value: "X", options: []string{}, isText: true},
 	}
 
 	for i := range fields {
@@ -766,9 +774,12 @@ func (m model) renderDocs() string {
 		{
 			{"Epochs", "Number of training epochs", []string{"Default: 1"}},
 			{"Batch Size", "Number of samples per batch", []string{"Default: 4"}},
-			{"Learning Rate", "Optimizer learning rate", []string{"Default: 0.0001"}},
 			{"Image Size", "Image size for resizing (applies to all dimensions)", []string{"Default: 128"}},
+			{"Learning Rate", "Optimizer learning rate", []string{"Default: 0.0001"}},
+			{"Optimizer", "Choice of optimizer algorithm for training", []string{"Adam: Adaptive learning rate with momentum. Default, good general-purpose optimizer.", "AdamW: Adam with decoupled weight decay. Better generalization in many cases.", "SGD: Stochastic Gradient Descent with momentum. Simple, effective for some tasks."}},
 			{"Workers", "Number of data loading workers", []string{"Default: 0"}},
+			{"LR Scheduler", "Learning rate schedule for adjusting learning rate during training", []string{"none: Constant learning rate. Default.", "cosine: Cosine annealing - gradually decreases LR using cosine function.", "step: Step decay - decreases LR at fixed intervals.", "plateau: ReduceLROnPlateau - decreases LR when validation loss plateaus."}},
+			{"Patience", "X = no early stopping (default). Number = stop if no improvement for N epochs", []string{"Default: X. Training continues for all epochs.", "Example: 3, 5, 10 = enable early stopping with that patience value."}},
 		},
 		// Preprocessing (3)
 		{
@@ -797,8 +808,8 @@ func (m model) renderDocs() string {
 		},
 		// Device (8)
 		{
-			{"CUDA", "Use GPU acceleration", nil},
-			{"CPU", "Use CPU for computation", nil},
+			{"Device", "Computation device selection", []string{"CUDA: GPU acceleration", "CPU: CPU-based computation"}},
+			{"Mixed Precision", "Use lower precision (16-bit) for faster training and reduced memory", []string{"no: Full precision (32-bit). Default, stable.", "fp16: Half precision (16-bit). Faster but less stable.", "bf16: Brain floating point (16-bit). Better stability than fp16, newer hardware."}},
 		},
 		// Active Transforms (9)
 		{
@@ -964,6 +975,20 @@ func (m model) generateCommand() string {
 		if vals["AUG FLIP"] == "true" {
 			cmd += fmt.Sprintf(" --aug_flip --aug_flip_prob %s", h(vals["AUG FLIP PROB"]))
 		}
+	}
+
+	if vals["OPTIMIZER"] != "adam" {
+		cmd += fmt.Sprintf(" --optimizer %s", h(vals["OPTIMIZER"]))
+	}
+	if vals["MIXED PRECISION"] != "no" {
+		cmd += fmt.Sprintf(" --mixed_precision %s", h(vals["MIXED PRECISION"]))
+	}
+	if vals["SCHEDULER"] != "none" {
+		cmd += fmt.Sprintf(" --scheduler %s", h(vals["SCHEDULER"]))
+	}
+	patience := vals["PATIENCE"]
+	if patience != "" && strings.ToUpper(patience) != "X" {
+		cmd += fmt.Sprintf(" --early_stopping --patience %s", h(patience))
 	}
 
 	return cmd

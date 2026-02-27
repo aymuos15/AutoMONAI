@@ -80,3 +80,4 @@ dmypy.json
 
 # ty
 .ty_cache/
+results/

@@ -33,6 +33,11 @@ TRAINING_DEFAULTS = {
     "val_interval": 1,
     "metrics": ["dice", "iou"],
     "loss": "dice",
+    "optimizer": "adam",
+    "mixed_precision": "no",
+    "early_stopping": False,
+    "patience": 5,
+    "scheduler": "none",
 }
 
 METRICS_AVAILABLE = ["dice", "iou"]
@@ -42,6 +47,10 @@ LOSSES_AVAILABLE = ["dice", "cross_entropy", "focal"]
 PREPROC_NORM_AVAILABLE = ["minmax", "zscore"]
 
 PREPROC_CROP_AVAILABLE = ["center", "random"]
+
+OPTIMIZERS_AVAILABLE = ["adam", "adamw", "sgd"]
+
+SCHEDULERS_AVAILABLE = ["none", "cosine", "step", "plateau"]
 
 DATASET_CLASSES = {
     "Dataset": {

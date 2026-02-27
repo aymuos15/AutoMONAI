@@ -104,11 +104,17 @@ def main():
         "normalization": args.norm,
         "crop": args.crop,
         "augmentation_enabled": args.augment,
+        "optimizer": args.optimizer,
+        "mixed_precision": args.mixed_precision,
+        "scheduler": args.scheduler,
+        "early_stopping_enabled": args.early_stopping,
+        "patience": args.patience,
     }
     logger.save_config(config)
 
     # Initialize Fabric for device and distributed training management
-    fabric = Fabric(accelerator="auto" if not args.device else args.device)
+    precision = args.mixed_precision if args.mixed_precision != "no" else None
+    fabric = Fabric(accelerator="auto" if not args.device else args.device, precision=precision)
     fabric.launch()
 
     print(f"Using device: {fabric.device}")
@@ -158,11 +164,31 @@ def main():
 
     model = get_model(args.model, in_channels, out_channels, spatial_dims, args.img_size)
     loss_fn = get_loss(args.loss)
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+
+    # Create optimizer based on user selection
+    if args.optimizer == "adamw":
+        optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    elif args.optimizer == "sgd":
+        optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
+    else:  # adam
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # Setup model, optimizer, and dataloaders with Fabric
     model, optimizer = fabric.setup(model, optimizer)
     train_loader, test_loader = fabric.setup_dataloaders(train_loader, test_loader)
+
+    # Setup learning rate scheduler
+    if args.scheduler == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
+    elif args.scheduler == "step":
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=max(1, args.epochs // 3), gamma=0.1)
+    elif args.scheduler == "plateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=max(1, args.patience // 2))
+    else:
+        scheduler = None
+
+    # Early stopping state
+    no_improve_count = 0
 
     print(f"\nTraining for {args.epochs} epoch(s)...")
     best_loss = float("inf")
@@ -186,6 +212,23 @@ def main():
 
         # Save checkpoint
         logger.save_checkpoint(model, epoch, optimizer, is_best=is_best)
+
+        # Step learning rate scheduler
+        if scheduler is not None:
+            if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler.step(loss)
+            else:
+                scheduler.step()
+
+        # Early stopping check
+        if args.early_stopping:
+            if not is_best:
+                no_improve_count += 1
+                if no_improve_count >= args.patience:
+                    print(f"Early stopping triggered after {epoch + 1} epochs (no improvement for {args.patience} epochs).")
+                    break
+            else:
+                no_improve_count = 0
 
         log_msg = f"Epoch {epoch + 1}/{args.epochs} - Loss: {loss:.4f}"
         if "dice" in result:

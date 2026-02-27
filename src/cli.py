@@ -9,6 +9,8 @@ from .config import (
     LOSSES_AVAILABLE,
     PREPROC_NORM_AVAILABLE,
     PREPROC_CROP_AVAILABLE,
+    OPTIMIZERS_AVAILABLE,
+    SCHEDULERS_AVAILABLE,
 )
 from .dataset import list_datasets
 
@@ -202,6 +204,38 @@ def get_parser():
         default=[],
         choices=PREPROC_CROP_AVAILABLE,
         help=f"Crop methods to apply. Available: {', '.join(PREPROC_CROP_AVAILABLE)}",
+    )
+    parser.add_argument(
+        "--optimizer",
+        type=str,
+        default=TRAINING_DEFAULTS["optimizer"],
+        choices=OPTIMIZERS_AVAILABLE,
+        help=f"Optimizer to use. Available: {', '.join(OPTIMIZERS_AVAILABLE)}",
+    )
+    parser.add_argument(
+        "--mixed_precision",
+        type=str,
+        default=TRAINING_DEFAULTS["mixed_precision"],
+        choices=["no", "fp16", "bf16"],
+        help="Mixed precision training (no, fp16, bf16)",
+    )
+    parser.add_argument(
+        "--scheduler",
+        type=str,
+        default=TRAINING_DEFAULTS["scheduler"],
+        choices=SCHEDULERS_AVAILABLE,
+        help=f"Learning rate scheduler. Available: {', '.join(SCHEDULERS_AVAILABLE)}",
+    )
+    parser.add_argument(
+        "--early_stopping",
+        action="store_true",
+        help="Enable early stopping based on validation loss",
+    )
+    parser.add_argument(
+        "--patience",
+        type=int,
+        default=TRAINING_DEFAULTS["patience"],
+        help="Patience for early stopping (number of epochs with no improvement before stopping)",
     )
 
     return parser

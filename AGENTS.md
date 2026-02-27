@@ -18,13 +18,16 @@ Languages: **Python** (core library, FastAPI server, tests), **Go** (TUI), **HTM
 ## Repository Layout
 
 ```
-src/            Core Python library (config, models, dataset, transforms, train, inference, cli, run)
+src/            Core Python library (config, models, dataset, transforms, train, inference, results, cli, run)
+  results.py    RunLogger — checkpoints, metrics CSV, config/summary JSON per run
   tests/        pytest test suite (test_models, test_losses, test_integration)
 UI/
-  server.py     FastAPI backend — serves GUI static files + /api/models, /api/datasets
+  server.py     FastAPI backend — serves GUI static files + /api/models, /api/datasets, /api/results
   cli/          CLI entry points (gui.py, tui.py)
   gui/          Web interface (vanilla HTML/CSS/JS, no build step)
+    results.js  Results viewer with Chart.js loss/metric graphs
   tui/          Terminal UI (Go, BubbleTea + lipgloss)
+results/        Training run outputs (results/dataset/model/timestamp/{config,metrics,summary,checkpoints})
 pyproject.toml  Build config, dependencies, ruff, pytest, coverage settings
 ```
 
@@ -37,7 +40,7 @@ uv sync                        # install all deps from uv.lock
 uv pip install -e ".[dev]"     # editable install with dev extras
 automonai-gui                  # launch web GUI (FastAPI server + browser)
 automonai-tui                  # build and launch terminal UI
-python src/run.py --dataset Dataset001_Cellpose --model unet --epochs 10
+automonai-train --dataset Dataset001_Cellpose --model unet --epochs 10
 ```
 
 ---
@@ -177,7 +180,7 @@ Any new field, option, section, or workflow added to one must be mirrored in the
 - Both generate a semantically equivalent `python run.py ...` CLI command
 - Both fetch `/api/models` and `/api/datasets` as the single source of truth
 - Visual alignment: TUI uses lipgloss `"0"`/`"15"` to mirror the GUI's dark theme (`#0a0a0a`)
-- Both share the same two-section layout: **Generate** (form) and **Docs**
+- Both share the same three-page layout: **Generate** (form), **Docs**, and **Results**
 
 ---
 

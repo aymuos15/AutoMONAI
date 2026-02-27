@@ -95,7 +95,7 @@ function formatRawCommand(cmd) {
 			groups.dataset.push(flagArg);
 		} else if (["metrics", "loss"].includes(flag)) {
 			groups.metrics.push(flagArg);
-		} else if (["epochs", "batch_size", "lr", "num_workers"].includes(flag)) {
+		} else if (["epochs", "batch_size", "lr", "num_workers", "optimizer", "mixed_precision", "scheduler", "early_stopping", "patience"].includes(flag)) {
 			groups.training.push(flagArg);
 		} else if (["img_size"].includes(flag)) {
 			groups.image.push(flagArg);
@@ -170,7 +170,7 @@ function formatCommand(cmd) {
 			groups.dataset.push(flagArg);
 		} else if (["metrics", "loss"].includes(flag)) {
 			groups.metrics.push(flagArg);
-		} else if (["epochs", "batch_size", "lr", "num_workers"].includes(flag)) {
+		} else if (["epochs", "batch_size", "lr", "num_workers", "optimizer", "mixed_precision", "scheduler", "early_stopping", "patience"].includes(flag)) {
 			groups.training.push(flagArg);
 		} else if (["img_size"].includes(flag)) {
 			groups.image.push(flagArg);
@@ -250,6 +250,12 @@ function updateCommand() {
 	const loss = document.getElementById("loss").value;
 	const metrics = document.getElementById("metrics").value;
 
+	const optimizer = document.getElementById("optimizer").value;
+	const mixed_precision = document.getElementById("mixed_precision").value;
+	const scheduler = document.getElementById("scheduler").value;
+	const patience = document.getElementById("patience").value;
+	const early_stopping = patience && patience.toUpperCase() !== "X";
+
 	document.getElementById("aug_rotate_prob_val").textContent = aug_rotate_prob;
 	document.getElementById("aug_flip_prob_val").textContent = aug_flip_prob;
 
@@ -286,6 +292,19 @@ function updateCommand() {
 		if (aug_flip) {
 			command += ` --aug_flip --aug_flip_prob ${aug_flip_prob}`;
 		}
+	}
+
+	if (optimizer !== "adam") {
+		command += ` --optimizer ${optimizer}`;
+	}
+	if (mixed_precision !== "no") {
+		command += ` --mixed_precision ${mixed_precision}`;
+	}
+	if (scheduler !== "none") {
+		command += ` --scheduler ${scheduler}`;
+	}
+	if (early_stopping) {
+		command += ` --early_stopping --patience ${patience}`;
 	}
 
 	const formattedHtml = formatCommand(command);
