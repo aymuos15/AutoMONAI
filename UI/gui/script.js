@@ -248,7 +248,9 @@ function updateCommand() {
 	const crop_random = document.getElementById("crop_random").checked;
 
 	const loss = document.getElementById("loss").value;
-	const metrics = document.getElementById("metrics").value;
+	// Collect selected metrics from checkboxes
+	const metricsCheckboxes = document.querySelectorAll('input[name="metrics"]:checked');
+	const metrics = Array.from(metricsCheckboxes).map(cb => cb.value).join(' ');
 
 	const optimizer = document.getElementById("optimizer").value;
 	const mixed_precision = document.getElementById("mixed_precision").value;
@@ -473,6 +475,11 @@ function switchPage(pageName) {
 	// Load results if switching to results page
 	if (pageName === "results") {
 		loadResults();
+	}
+
+	// Sync command if switching to launch page
+	if (pageName === "launch") {
+		syncLaunchCommand();
 	}
 }
 

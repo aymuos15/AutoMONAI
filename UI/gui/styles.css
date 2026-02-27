@@ -489,6 +489,55 @@ select option {
 	cursor: pointer;
 }
 
+.metrics-checkboxes {
+	display: flex;
+	gap: 24px;
+	border: 1px solid var(--border);
+	padding: 16px;
+}
+
+.metrics-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.metrics-checkbox input[type="checkbox"] {
+	width: 20px;
+	height: 20px;
+	appearance: none;
+	border: 1px solid var(--border);
+	background: transparent;
+	cursor: pointer;
+	position: relative;
+	transition: all 0.2s;
+}
+
+.metrics-checkbox input[type="checkbox"]:checked {
+	background: var(--fg);
+	border-color: var(--fg);
+}
+
+.metrics-checkbox input[type="checkbox"]:checked::after {
+	content: "✓";
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: var(--bg);
+	font-size: 12px;
+	font-weight: bold;
+}
+
+.metrics-checkbox label {
+	margin-bottom: 0;
+	text-transform: none;
+	font-size: 0.85rem;
+	letter-spacing: 0;
+	color: var(--fg);
+	cursor: pointer;
+}
+
 .aug-prob {
 	display: flex;
 	align-items: center;
@@ -839,4 +888,55 @@ h3 {
 .results-chart-wrap canvas {
 	width: 100%;
 	max-height: 220px;
+}
+
+/* Launch */
+.launch-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.launch-header #launch-btn,
+.launch-header #stop-btn {
+	margin: 0;
+	padding: 12px 16px;
+	flex: 1;
+	max-width: 150px;
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+}
+
+#launch-status-indicator {
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	font-weight: 500;
+}
+
+.status-idle {
+	color: var(--fg-dim);
+}
+
+.status-running {
+	color: #4ade80;
+}
+
+.launch-terminal {
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 0.75rem;
+	background: var(--bg-input);
+	border: 1px solid var(--border);
+	padding: 12px;
+	height: 400px;
+	overflow-y: auto;
+	line-height: 1.6;
+}
+
+.log-line {
+	color: var(--fg-dim);
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	margin-bottom: 2px;
 }

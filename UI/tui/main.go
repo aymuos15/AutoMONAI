@@ -50,32 +50,32 @@ var subTabShortNames = []string{
 
 // Field index constants.
 const (
-	fieldDataset       = 0
-	fieldModel         = 1
-	fieldMetrics       = 2
-	fieldLoss          = 3
-	fieldTrainDS       = 4
-	fieldInferDS       = 5
-	fieldEpochs        = 6
-	fieldBatchSize     = 7
-	fieldLR            = 8
-	fieldImgSize       = 9
-	fieldWorkers       = 10
-	fieldOutputDir     = 11
-	fieldDevice        = 12
-	fieldNormMinmax    = 13
-	fieldNormZscore    = 14
-	fieldCropCenter    = 15
-	fieldCropRandom    = 16
-	fieldAugment       = 17
-	fieldAugRotate     = 18
-	fieldAugRotateProb = 19
-	fieldAugFlip       = 20
-	fieldAugFlipProb   = 21
-	fieldOptimizer     = 22
+	fieldDataset        = 0
+	fieldModel          = 1
+	fieldMetrics        = 2
+	fieldLoss           = 3
+	fieldTrainDS        = 4
+	fieldInferDS        = 5
+	fieldEpochs         = 6
+	fieldBatchSize      = 7
+	fieldLR             = 8
+	fieldImgSize        = 9
+	fieldWorkers        = 10
+	fieldOutputDir      = 11
+	fieldDevice         = 12
+	fieldNormMinmax     = 13
+	fieldNormZscore     = 14
+	fieldCropCenter     = 15
+	fieldCropRandom     = 16
+	fieldAugment        = 17
+	fieldAugRotate      = 18
+	fieldAugRotateProb  = 19
+	fieldAugFlip        = 20
+	fieldAugFlipProb    = 21
+	fieldOptimizer      = 22
 	fieldMixedPrecision = 23
-	fieldScheduler     = 24
-	fieldPatience      = 25
+	fieldScheduler      = 24
+	fieldPatience       = 25
 )
 
 // Per-sub-tab grid layouts for wide terminals. Each entry is a row of field indices.
@@ -205,11 +205,12 @@ type apiData struct {
 }
 
 type formField struct {
-	label   string
-	value   string
-	options []string
-	isText  bool
-	input   textinput.Model
+	label         string
+	value         string
+	options       []string
+	isText        bool
+	isMultiSelect bool
+	input         textinput.Model
 }
 
 type model struct {
@@ -314,7 +315,7 @@ func newModel() model {
 	fields := []formField{
 		{label: "DATASET", value: "", options: []string{}, isText: false},
 		{label: "MODEL", value: "", options: []string{}, isText: false},
-		{label: "METRICS", value: "dice iou", options: []string{"dice", "iou", "dice iou"}, isText: false},
+		{label: "METRICS", value: "dice", options: []string{"dice", "iou"}, isText: false, isMultiSelect: true},
 		{label: "LOSS", value: "dice", options: []string{"dice", "cross_entropy", "focal"}, isText: false},
 		{label: "TRAIN DATASET CLASS", value: "Dataset", options: []string{"Dataset", "CacheDataset", "PersistentDataset", "SmartCacheDataset"}, isText: false},
 		{label: "INFERENCE DATASET CLASS", value: "Dataset", options: []string{"Dataset", "CacheDataset", "PersistentDataset", "SmartCacheDataset"}, isText: false},
@@ -513,6 +514,12 @@ func (m *model) cycleFieldOption(fieldIdx int, forward bool) {
 		return
 	}
 
+	// Special handling for multi-select metrics
+	if field.isMultiSelect {
+		m.toggleMetric(fieldIdx, forward)
+		return
+	}
+
 	idx := indexOf(field.options, field.value)
 	if idx < 0 {
 		idx = 0
@@ -523,6 +530,50 @@ func (m *model) cycleFieldOption(fieldIdx int, forward bool) {
 		idx = (idx - 1 + len(field.options)) % len(field.options)
 	}
 	field.value = field.options[idx]
+}
+
+func (m *model) toggleMetric(fieldIdx int, forward bool) {
+	field := &m.fields[fieldIdx]
+	selectedMetrics := strings.Fields(field.value)
+	selectedSet := make(map[string]bool)
+	for _, metric := range selectedMetrics {
+		selectedSet[metric] = true
+	}
+
+	// Toggle the first unselected metric if moving forward, or deselect last if moving backward
+	if forward {
+		// Add next unselected metric
+		for _, option := range field.options {
+			if !selectedSet[option] {
+				selectedSet[option] = true
+				break
+			}
+		}
+	} else {
+		// Remove last selected metric (but keep dice)
+		for i := len(field.options) - 1; i >= 0; i-- {
+			option := field.options[i]
+			if selectedSet[option] && option != "dice" {
+				delete(selectedSet, option)
+				break
+			}
+		}
+	}
+
+	// Rebuild the value, ensuring dice is always included
+	var result []string
+	for _, option := range field.options {
+		if selectedSet[option] {
+			result = append(result, option)
+		}
+	}
+
+	// Ensure dice is always selected
+	if len(result) == 0 || (len(result) == 1 && result[0] != "dice") {
+		result = []string{"dice"}
+	}
+
+	field.value = strings.Join(result, " ")
 }
 
 func indexOf(arr []string, val string) int {
@@ -798,7 +849,6 @@ func (m model) renderDocs() string {
 		{
 			{"Dice", "Dice coefficient metric for segmentation evaluation. Measures overlap between predicted and ground truth segmentations.", []string{"Range: 0-1 (higher is better)", "Formula: 2 * |X ∩ Y| / (|X| + |Y|)"}},
 			{"IoU (Intersection over Union)", "Also known as Jaccard Index. Measures the overlap ratio between predicted and ground truth segmentations.", []string{"Range: 0-1 (higher is better)", "Formula: |X ∩ Y| / |X ∪ Y|"}},
-			{"Dice + IoU", "Combines both metrics for comprehensive evaluation. Provides complementary information about segmentation quality.", []string{"Recommended for balanced metric assessment"}},
 		},
 		// Loss Functions (6)
 		{
@@ -905,15 +955,23 @@ func (m model) renderFieldWithWidth(idx, innerWidth int) string {
 	var value string
 	if f.isText {
 		value = f.input.View()
+	} else if f.isMultiSelect {
+		// Render metrics as checkboxes
+		value = m.renderMetricsCheckboxes(f, isSelected)
 	} else {
 		value = f.value
 	}
 
-	if len(value) == 0 {
+	if len(value) == 0 && !f.isMultiSelect {
 		value = ">"
 	}
 	if innerWidth < 4 {
 		innerWidth = 4
+	}
+
+	if f.isMultiSelect {
+		// Don't add border for multi-select, it's handled in renderMetricsCheckboxes
+		return value
 	}
 
 	style := fieldBorder.Padding(0, 1).Width(innerWidth)
@@ -921,6 +979,31 @@ func (m model) renderFieldWithWidth(idx, innerWidth int) string {
 		style = activeField.Padding(0, 1).Foreground(darkFg).Width(innerWidth)
 	}
 	return style.Render(value)
+}
+
+func (m model) renderMetricsCheckboxes(f formField, isSelected bool) string {
+	selectedMetrics := strings.Fields(f.value)
+	selectedSet := make(map[string]bool)
+	for _, metric := range selectedMetrics {
+		selectedSet[metric] = true
+	}
+
+	var parts []string
+	for _, option := range f.options {
+		checked := selectedSet[option]
+		checkbox := "☐"
+		if checked {
+			checkbox = "☑"
+		}
+		part := checkbox + " " + option
+		if isSelected {
+			part = activeField.Render(part)
+		} else {
+			part = fieldBorder.Render(part)
+		}
+		parts = append(parts, part)
+	}
+	return strings.Join(parts, " ")
 }
 
 func (m model) generateCommand() string {

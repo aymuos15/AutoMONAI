@@ -15,6 +15,7 @@
         <div class="nav-tabs">
             <button type="button" class="nav-tab active" onclick="switchPage('generate')">Generate</button>
             <button type="button" class="nav-tab" onclick="switchPage('docs')">Docs</button>
+            <button type="button" class="nav-tab" onclick="switchPage('launch')">Launch</button>
             <button type="button" class="nav-tab" onclick="switchPage('results')">Results</button>
         </div>
 
@@ -208,11 +209,16 @@
             <div id="sub-metrics" class="sub-page">
                 <div class="form-group">
                     <label>Metrics</label>
-                    <select id="metrics" onchange="updateCommand()">
-                        <option value="dice">Dice</option>
-                        <option value="iou">IoU</option>
-                        <option value="dice iou" selected>Dice + IoU</option>
-                    </select>
+                    <div class="metrics-checkboxes">
+                        <div class="metrics-checkbox">
+                            <input type="checkbox" id="metrics-dice" name="metrics" value="dice" checked onchange="updateCommand()">
+                            <label for="metrics-dice">Dice</label>
+                        </div>
+                        <div class="metrics-checkbox">
+                            <input type="checkbox" id="metrics-iou" name="metrics" value="iou" onchange="updateCommand()">
+                            <label for="metrics-iou">IoU</label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -396,26 +402,22 @@
                 </div>
             </div>
 
-            <div id="sub-metrics" class="sub-page">
-                <h2>Metrics</h2>
-                <div class="doc-section">
-                    <h3>Dice</h3>
-                    <p>Dice coefficient metric for segmentation evaluation. Measures overlap between predicted and ground truth segmentations.</p>
-                    <p class="doc-info">Range: 0-1 (higher is better)</p>
-                    <p class="doc-info">Formula: 2 * |X ∩ Y| / (|X| + |Y|)</p>
-                </div>
-                <div class="doc-section">
-                    <h3>IoU (Intersection over Union)</h3>
-                    <p>Also known as Jaccard Index. Measures the overlap ratio between predicted and ground truth segmentations.</p>
-                    <p class="doc-info">Range: 0-1 (higher is better)</p>
-                    <p class="doc-info">Formula: |X ∩ Y| / |X ∪ Y|</p>
-                </div>
-                <div class="doc-section">
-                    <h3>Dice + IoU</h3>
-                    <p>Combines both metrics for comprehensive evaluation. Provides complementary information about segmentation quality.</p>
-                    <p class="doc-info">Recommended for balanced metric assessment</p>
-                </div>
-            </div>
+             <div id="sub-metrics" class="sub-page">
+                 <h2>Metrics</h2>
+                 <p class="doc-info" style="margin-bottom: 1rem;">Select one or more metrics to compute during training. Dice is enforced by default.</p>
+                 <div class="doc-section">
+                     <h3>Dice</h3>
+                     <p>Dice coefficient metric for segmentation evaluation. Measures overlap between predicted and ground truth segmentations.</p>
+                     <p class="doc-info">Range: 0-1 (higher is better)</p>
+                     <p class="doc-info">Formula: 2 * |X ∩ Y| / (|X| + |Y|)</p>
+                 </div>
+                 <div class="doc-section">
+                     <h3>IoU (Intersection over Union)</h3>
+                     <p>Also known as Jaccard Index. Measures the overlap ratio between predicted and ground truth segmentations.</p>
+                     <p class="doc-info">Range: 0-1 (higher is better)</p>
+                     <p class="doc-info">Formula: |X ∩ Y| / |X ∪ Y|</p>
+                 </div>
+             </div>
 
             <div id="sub-loss" class="sub-page">
                 <h2>Loss Functions</h2>
@@ -457,6 +459,18 @@
                     <p class="doc-info">bf16: Brain floating point (16-bit). Better stability than fp16, newer hardware.</p>
                 </div>
             </div>
+        </div>
+
+        <div id="launch-page" class="page">
+            <div class="launch-header">
+                <span id="launch-status-indicator" class="status-idle">● Idle</span>
+                <button id="launch-btn" type="button" class="btn" onclick="launchTraining()">Launch</button>
+                <button id="stop-btn" type="button" class="btn" onclick="stopTraining()" style="display:none">Stop</button>
+            </div>
+
+            <div class="output full-width" id="launch-command-preview"></div>
+
+            <div class="launch-terminal" id="launch-terminal"></div>
         </div>
 
         <div id="results-page" class="page">
@@ -532,5 +546,6 @@
 
     <script src="/static/script.js?v=2"></script>
     <script src="/static/results.js?v=1"></script>
+    <script src="/static/launch.js?v=1"></script>
 </body>
 </html>
