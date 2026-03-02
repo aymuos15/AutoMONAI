@@ -3,84 +3,20 @@ function formatRawCommand(cmd) {
 	const parts = cmd.split(" --");
 	const baseCmd = parts[0];
 
-	// Group flags by category
-	const groups = {
-		dataset: [],
-		model: [],
-		metrics: [],
-		training: [],
-		image: [],
-		preprocessing: [],
-		augmentation: [],
-		output: [],
-	};
+	// Build formatted raw command with one flag per line
+	let raw = `${baseCmd} \\\n`;
 
 	for (let i = 1; i < parts.length; i++) {
 		const [flag, ...argParts] = parts[i].split(" ");
 		const arg = argParts.join(" ");
-		const flagArg = { flag, arg };
+		const isLast = i === parts.length - 1;
 
-		if (["dataset", "model"].includes(flag)) {
-			groups.dataset.push(flagArg);
-		} else if (["metrics", "loss"].includes(flag)) {
-			groups.metrics.push(flagArg);
-		} else if (
-			[
-				"epochs",
-				"batch_size",
-				"lr",
-				"num_workers",
-				"optimizer",
-				"mixed_precision",
-				"scheduler",
-				"early_stopping",
-				"patience",
-			].includes(flag)
-		) {
-			groups.training.push(flagArg);
-		} else if (["img_size"].includes(flag)) {
-			groups.image.push(flagArg);
-		} else if (["norm", "crop"].includes(flag)) {
-			groups.preprocessing.push(flagArg);
-		} else if (flag.includes("aug")) {
-			groups.augmentation.push(flagArg);
-		} else if (["output_dir", "device"].includes(flag)) {
-			groups.output.push(flagArg);
+		raw += `  --${flag}`;
+		if (arg) {
+			raw += ` ${arg}`;
 		}
+		raw += isLast ? "" : ` \\\n`;
 	}
-
-	// Build formatted raw command
-	let raw = `${baseCmd} \\\n`;
-
-	const groupOrder = [
-		"dataset",
-		"metrics",
-		"training",
-		"image",
-		"preprocessing",
-		"augmentation",
-		"output",
-	];
-	for (const groupName of groupOrder) {
-		const items = groups[groupName];
-		if (items.length === 0) continue;
-
-		raw += `  `;
-		for (let j = 0; j < items.length; j++) {
-			const { flag, arg } = items[j];
-			raw += `--${flag}`;
-			if (arg) {
-				raw += ` ${arg}`;
-			}
-			if (j < items.length - 1) {
-				raw += ` `;
-			}
-		}
-		raw += ` \\\n`;
-	}
-
-	// Remove trailing backslash and newline from last line
-	raw = raw.replace(/ \\\n$/, "");
 
 	return raw;
 }
@@ -90,84 +26,22 @@ function formatCommand(cmd) {
 	const parts = cmd.split(" --");
 	const baseCmd = parts[0];
 
-	// Group flags by category
-	const groups = {
-		dataset: [],
-		model: [],
-		metrics: [],
-		training: [],
-		image: [],
-		preprocessing: [],
-		augmentation: [],
-		output: [],
-	};
+	// Build formatted HTML with one flag per line
+	let html = `<span class="cmd">${baseCmd}</span> \\<br>`;
 
 	for (let i = 1; i < parts.length; i++) {
 		const [flag, ...argParts] = parts[i].split(" ");
 		const arg = argParts.join(" ");
-		const flagArg = { flag, arg };
+		const isLast = i === parts.length - 1;
 
-		if (["dataset", "model"].includes(flag)) {
-			groups.dataset.push(flagArg);
-		} else if (["metrics", "loss"].includes(flag)) {
-			groups.metrics.push(flagArg);
-		} else if (
-			[
-				"epochs",
-				"batch_size",
-				"lr",
-				"num_workers",
-				"optimizer",
-				"mixed_precision",
-				"scheduler",
-				"early_stopping",
-				"patience",
-			].includes(flag)
-		) {
-			groups.training.push(flagArg);
-		} else if (["img_size"].includes(flag)) {
-			groups.image.push(flagArg);
-		} else if (["norm", "crop"].includes(flag)) {
-			groups.preprocessing.push(flagArg);
-		} else if (flag.includes("aug")) {
-			groups.augmentation.push(flagArg);
-		} else if (["output_dir", "device"].includes(flag)) {
-			groups.output.push(flagArg);
+		html += `  <span class="flag">--${flag}</span>`;
+		if (arg) {
+			html += ` <span class="arg">${arg}</span>`;
+		}
+		if (!isLast) {
+			html += ` \\<br>`;
 		}
 	}
-
-	// Build formatted HTML
-	let html = `<span class="cmd">${baseCmd}</span> \\<br>`;
-
-	const groupOrder = [
-		"dataset",
-		"metrics",
-		"training",
-		"image",
-		"preprocessing",
-		"augmentation",
-		"output",
-	];
-	for (const groupName of groupOrder) {
-		const items = groups[groupName];
-		if (items.length === 0) continue;
-
-		html += `  `;
-		for (let j = 0; j < items.length; j++) {
-			const { flag, arg } = items[j];
-			html += `<span class="flag">--${flag}</span>`;
-			if (arg) {
-				html += ` <span class="arg">${arg}</span>`;
-			}
-			if (j < items.length - 1) {
-				html += ` `;
-			}
-		}
-		html += ` \\<br>`;
-	}
-
-	// Remove trailing backslash and br from last line
-	html = html.replace(/ \\<br>$/, "");
 
 	return html;
 }
@@ -220,37 +94,24 @@ function updateCommand() {
 
 	const resumeFrom = document.getElementById("resume_from")?.value;
 
-	let command = `python3 -m src.run --dataset ${dataset} --model ${model} --metrics ${metrics} --loss ${loss}`;
+	let command = `python3 -m src.run --dataset ${dataset} --model ${model} --train_dataset_class ${trainDataset} --inference_dataset_class ${inferenceDataset} --epochs ${epochs} --batch_size ${batch_size} --lr ${lr} --img_size ${img_size} --num_workers ${num_workers} --output_dir ${output_dir} --device ${device} --metrics ${metrics} --loss ${loss}`;
 
 	if (resumeFrom) {
 		command += ` --resume ${resumeFrom}`;
 	}
 
-	if (trainDataset && trainDataset !== "Dataset") {
-		command += ` --train_dataset_class ${trainDataset}`;
-	}
-	if (inferenceDataset && inferenceDataset !== "Dataset") {
-		command += ` --inference_dataset_class ${inferenceDataset}`;
-	}
-
-	command += ` --epochs ${epochs} --batch_size ${batch_size} --lr ${lr} --img_size ${img_size} --num_workers ${num_workers} --output_dir ${output_dir} --device ${device}`;
-
 	const normOpts = [];
 	if (norm_minmax) normOpts.push("minmax");
 	if (norm_zscore) normOpts.push("zscore");
-	if (normOpts.length > 0) {
-		command += ` --norm ${normOpts.join(" ")}`;
-	}
+	command += ` --norm ${normOpts.length > 0 ? normOpts.join(" ") : "none"}`;
 
 	const cropOpts = [];
 	if (crop_center) cropOpts.push("center");
 	if (crop_random) cropOpts.push("random");
-	if (cropOpts.length > 0) {
-		command += ` --crop ${cropOpts.join(" ")}`;
-	}
+	command += ` --crop ${cropOpts.length > 0 ? cropOpts.join(" ") : "none"}`;
 
+	command += ` --augment ${augmentEnabled ? "true" : "false"}`;
 	if (augmentEnabled) {
-		command += " --augment";
 		// Use the average of rotate and flip probabilities
 		let avgProb = aug_rotate_prob;
 		if (aug_rotate && aug_flip) {
@@ -261,17 +122,12 @@ function updateCommand() {
 		command += ` --aug_prob ${avgProb}`;
 	}
 
-	if (optimizer !== "adam") {
-		command += ` --optimizer ${optimizer}`;
-	}
-	if (mixed_precision !== "no") {
-		command += ` --mixed_precision ${mixed_precision}`;
-	}
-	if (scheduler !== "none") {
-		command += ` --scheduler ${scheduler}`;
-	}
+	command += ` --optimizer ${optimizer}`;
+	command += ` --mixed_precision ${mixed_precision}`;
+	command += ` --scheduler ${scheduler}`;
+	command += ` --early_stopping ${early_stopping ? "true" : "false"}`;
 	if (early_stopping) {
-		command += ` --early_stopping --patience ${patience}`;
+		command += ` --patience ${patience}`;
 	}
 
 	const formattedHtml = formatCommand(command);

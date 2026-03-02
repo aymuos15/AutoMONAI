@@ -27,6 +27,11 @@ function switchPage(pageName) {
 	if (pageName === "launch") {
 		syncLaunchCommand();
 	}
+
+	// Load configs if switching to configs page
+	if (pageName === "configs") {
+		loadConfigs();
+	}
 }
 
 function switchSubTab(subTabName) {

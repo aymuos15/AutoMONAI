@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from UI.routers import config, launch, results
+from UI.routers import config, launch, results, configs
 
 app = FastAPI(
     title="MonaiUI",
@@ -23,6 +23,7 @@ app = FastAPI(
 app.include_router(config.router)
 app.include_router(launch.router)
 app.include_router(results.router)
+app.include_router(configs.router)
 
 
 @app.get("/")

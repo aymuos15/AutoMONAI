@@ -18,9 +18,27 @@ function syncLaunchCommand() {
 }
 
 function updateConfigSummary() {
-	const dataset = document.getElementById("dataset").value || "-";
-	const model = document.getElementById("model").value || "-";
-	const epochs = document.getElementById("epochs").value || "-";
+	// Try to get from form fields first (Generate page)
+	let dataset = document.getElementById("dataset")?.value || "-";
+	let model = document.getElementById("model")?.value || "-";
+	let epochs = document.getElementById("epochs")?.value || "-";
+
+	// If form fields are empty, parse from command
+	if (dataset === "-" || model === "-" || epochs === "-") {
+		const cmdPreview = document.getElementById("launch-command-preview");
+		if (cmdPreview && cmdPreview.textContent) {
+			const command = cmdPreview.textContent;
+
+			// Extract from command string
+			const datasetMatch = command.match(/--dataset\s+(\S+)/);
+			const modelMatch = command.match(/--model\s+(\S+)/);
+			const epochsMatch = command.match(/--epochs\s+(\d+)/);
+
+			if (datasetMatch) dataset = datasetMatch[1];
+			if (modelMatch) model = modelMatch[1];
+			if (epochsMatch) epochs = epochsMatch[1];
+		}
+	}
 
 	// Extract dataset ID (e.g., "001" from "Dataset001_Cellpose")
 	const datasetId = dataset.replace(/^Dataset(\d+).*/, "$1") || dataset;
@@ -93,6 +111,33 @@ async function launchTraining() {
 
 async function stopTraining() {
 	await fetch("/api/launch/stop", { method: "POST" });
+}
+
+function deleteCurrentConfig() {
+	if (!confirm("Clear current config?")) return;
+
+	// Clear command display and config summary
+	const commandDisplay = document.getElementById("command-display");
+	if (commandDisplay) {
+		commandDisplay.innerHTML = "";
+		commandDisplay.dataset.raw = "";
+	}
+
+	const cmdPreview = document.getElementById("launch-command-preview");
+	if (cmdPreview) {
+		cmdPreview.innerHTML = "";
+		cmdPreview.dataset.raw = "";
+	}
+
+	// Reset config summary
+	document.getElementById("config-dataset").textContent = "-";
+	document.getElementById("config-model").textContent = "-";
+	document.getElementById("config-epochs").textContent = "-";
+
+	// Reset progress
+	document.getElementById("launch-progress-fill").style.width = "0%";
+	document.getElementById("launch-progress-text").textContent = "0%";
+	document.getElementById("launch-progress-number").textContent = "0%";
 }
 
 function _startLogStream() {

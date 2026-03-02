@@ -108,11 +108,19 @@
 
 .command-modal-container {
 	width: 90%;
-	max-width: 600px;
+	max-width: 800px;
+	max-height: 80vh;
 	background: var(--bg);
 	border: 1px solid var(--border);
 	box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+#command-modal-display {
+	overflow-y: auto;
+	flex: 1;
 }
 
 .command-modal-header {

@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="/static/styles/modals.css">
     <link rel="stylesheet" href="/static/styles/results.css">
     <link rel="stylesheet" href="/static/styles/launch.css">
+    <link rel="stylesheet" href="/static/styles/configs.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 </head>
 <body>
@@ -20,7 +21,7 @@
         <div class="nav-tabs">
             <button type="button" class="nav-tab active" onclick="switchPage('generate')">Generate</button>
             <button type="button" class="nav-tab" onclick="switchPage('docs')">Docs</button>
-            <button type="button" class="nav-tab" onclick="switchPage('launch')">Launch</button>
+            <button type="button" class="nav-tab" onclick="switchPage('configs')">Configs</button>
             <button type="button" class="nav-tab" onclick="switchPage('results')">Results</button>
         </div>
 
@@ -40,7 +41,10 @@
 
             <div id="sub-command" class="sub-page active">
                 <div class="output full-width" id="command-display"></div>
-                <button type="button" class="btn full-width" onclick="copyCommand()">Copy <kbd>Ctrl+Shift+C</kbd></button>
+                <div class="btn-row">
+                    <button type="button" class="btn btn-sm" onclick="copyCommand()">Copy <kbd>Ctrl+Shift+C</kbd></button>
+                    <button type="button" class="btn btn-sm" onclick="generateNewConfig()">Generate Config</button>
+                </div>
             </div>
 
             <div id="sub-models" class="sub-page">
@@ -473,10 +477,15 @@
             </div>
         </div>
 
+        <div id="configs-page" class="page">
+            <div id="configs-list"></div>
+        </div>
+
         <div id="launch-page" class="page">
             <div class="launch-bar">
                 <!-- Config on one line -->
                 <div class="launch-config-line">
+                    <button type="button" class="cmd-link" onclick="switchPage('generate')">&larr; Generate</button>
                     <span class="config-text">
                         <span id="config-dataset">-</span> _ <span id="config-model">-</span> _ <span id="config-epochs">-</span>
                     </span>
@@ -582,6 +591,7 @@
     <script src="/static/js/command.js"></script>
     <script src="/static/js/nav.js"></script>
     <script src="/static/js/search.js"></script>
+    <script src="/static/js/configs.js"></script>
     <script src="/static/results.js?v=1"></script>
     <script src="/static/launch.js?v=1"></script>
     <script src="/static/js/init.js"></script>

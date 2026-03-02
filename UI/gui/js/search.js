@@ -21,7 +21,7 @@ const allTabs = [
 	{ name: "Loss Functions (Docs)", id: "loss", page: "docs" },
 	{ name: "Device (Docs)", id: "device", page: "docs" },
 	// Main pages
-	{ name: "Launch", id: null, page: "launch" },
+	{ name: "Configs", id: null, page: "configs" },
 	{ name: "Results", id: null, page: "results" },
 ];
 
