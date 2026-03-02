@@ -10,7 +10,6 @@ const allTabs = [
 	{ name: "Metrics", id: "metrics", page: "generate" },
 	{ name: "Loss Functions", id: "loss", page: "generate" },
 	{ name: "Device", id: "device", page: "generate" },
-	{ name: "Active Transforms", id: "summary", page: "generate" },
 	// Docs page tabs
 	{ name: "Models (Docs)", id: "models", page: "docs" },
 	{ name: "Dataset Classes (Docs)", id: "dataset-classes", page: "docs" },
