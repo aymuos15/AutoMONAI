@@ -82,6 +82,13 @@
             </div>
 
             <div id="sub-training" class="sub-page">
+                <div class="form-group">
+                    <label>Resume from Previous Run</label>
+                    <select id="resume_from" onchange="handleResumeSelect()">
+                        <option value="">-- New Training --</option>
+                    </select>
+                </div>
+
                 <div class="row">
                     <div class="form-group">
                         <label>Epochs</label>

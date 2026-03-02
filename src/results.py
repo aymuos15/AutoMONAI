@@ -8,36 +8,53 @@ import torch
 class RunLogger:
     """Manages logging for a single training run."""
 
-    def __init__(self, dataset_name: str, model_name: str, results_root: str = "results"):
+    def __init__(
+        self,
+        dataset_name: str,
+        model_name: str,
+        results_root: str = "results",
+        resume_from: str = None,
+    ):
         """Initialize run logger with unique timestamp-based directory.
 
         Args:
             dataset_name: Name of the dataset used
             model_name: Name of the model used
             results_root: Root directory for all results (default: "results")
+            resume_from: Optional path to existing run to resume from (creates new timestamp)
         """
         self.dataset_name = dataset_name
         self.model_name = model_name
+        self.resume_from = resume_from
 
-        # Create run directory with timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.run_dir = Path(results_root) / dataset_name / model_name / timestamp
+        if resume_from:
+            resume_path = Path(resume_from)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.run_dir = (
+                Path(results_root)
+                / resume_path.parent.parent.name
+                / resume_path.parent.name
+                / f"{resume_path.name}_resumed_{timestamp}"
+            )
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.run_dir = Path(results_root) / dataset_name / model_name / timestamp
+
         self.run_dir.mkdir(parents=True, exist_ok=True)
 
-        # Subdirectories
         self.checkpoints_dir = self.run_dir / "checkpoints"
         self.checkpoints_dir.mkdir(exist_ok=True)
 
-        # Metadata and metrics files
         self.config_file = self.run_dir / "config.json"
         self.metrics_file = self.run_dir / "metrics.csv"
         self.log_file = self.run_dir / "training.log"
 
-        # Track metrics
         self.metrics_history = []
         self.csv_writer = None
         self.csv_file = None
 
+        if resume_from:
+            print(f"Resuming training from: {resume_from}")
         print(f"Run directory created: {self.run_dir}")
 
     def save_config(self, config: dict):
@@ -129,6 +146,55 @@ class RunLogger:
     def __enter__(self):
         """Context manager entry."""
         return self
+
+    @staticmethod
+    def load_checkpoint(checkpoint_path: str) -> dict:
+        """Load a checkpoint file.
+
+        Args:
+            checkpoint_path: Path to the checkpoint file (.pt)
+
+        Returns:
+            Dictionary with 'epoch', 'model_state', 'optimizer_state' (if saved)
+        """
+        checkpoint = torch.load(checkpoint_path)
+        return {
+            "epoch": checkpoint.get("epoch", 0),
+            "model_state": checkpoint.get("model_state", {}),
+            "optimizer_state": checkpoint.get("optimizer_state", None),
+        }
+
+    @staticmethod
+    def load_run_config(run_path: str) -> dict:
+        """Load config from a previous run.
+
+        Args:
+            run_path: Path to the run directory
+
+        Returns:
+            Dictionary with configuration parameters
+        """
+        config_file = Path(run_path) / "config.json"
+        if not config_file.exists():
+            raise FileNotFoundError(f"Config file not found: {config_file}")
+        with open(config_file) as f:
+            return json.load(f)
+
+    @staticmethod
+    def get_checkpoint_path(run_path: str, checkpoint_name: str = "best_model.pt") -> Path:
+        """Get the full path to a checkpoint file.
+
+        Args:
+            run_path: Path to the run directory
+            checkpoint_name: Name of checkpoint file (default: best_model.pt)
+
+        Returns:
+            Path object to the checkpoint
+        """
+        checkpoint_path = Path(run_path) / "checkpoints" / checkpoint_name
+        if not checkpoint_path.exists():
+            raise FileNotFoundError(f"Checkpoint not found: {checkpoint_path}")
+        return checkpoint_path
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""

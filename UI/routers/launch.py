@@ -51,7 +51,8 @@ async def launch_training(req: LaunchRequest):
     try:
         # Spawn process with unbuffered output
         _proc = subprocess.Popen(
-            ["python3", "-u", "-m", "src.run"] + shlex.split(req.command.replace("python3 -m src.run ", "")),
+            ["python3", "-u", "-m", "src.run"]
+            + shlex.split(req.command.replace("python3 -m src.run ", "")),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -80,6 +81,7 @@ async def launch_status():
 @router.get("/api/launch/logs")
 async def launch_logs():
     """Stream logs via SSE."""
+
     async def event_generator():
         tail_index = [0]  # Use a list to allow modification in nested scope
 

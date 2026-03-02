@@ -42,10 +42,15 @@ function displayResultsList(results) {
 	results.forEach((result) => {
 		const item = document.createElement("div");
 		item.className = "results-item";
+		const statusBadge =
+			result.status === "complete"
+				? '<span class="results-status results-status-complete">✓ Complete</span>'
+				: '<span class="results-status results-status-progress">⟳ In Progress</span>';
 		item.innerHTML = `
 			<div class="results-item-content">
 				<div class="results-item-header">
 					<span class="results-item-title">${result.dataset} / ${result.model}</span>
+					${statusBadge}
 					<span class="results-item-date">${formatDate(result.timestamp)}</span>
 				</div>
 				<div class="results-item-stats">
@@ -53,9 +58,21 @@ function displayResultsList(results) {
 					<span>loss ${result.best_loss.toFixed(4)}</span>
 				</div>
 			</div>
-			<button class="results-item-delete" title="Delete this run">🗑</button>
+			<div class="results-item-actions">
+				<button class="results-item-resume" title="Resume this run">↻ Resume</button>
+				<button class="results-item-delete" title="Delete this run">🗑</button>
+			</div>
 		`;
-		item.onclick = () => viewResult(result);
+		item.onclick = (e) => {
+			if (e.target.classList.contains("results-item-resume")) return;
+			viewResult(result);
+		};
+
+		const resumeBtn = item.querySelector(".results-item-resume");
+		resumeBtn.onclick = (e) => {
+			e.stopPropagation();
+			resumeResult(result);
+		};
 
 		// Delete button click handler (stop propagation to prevent opening the result)
 		const deleteBtn = item.querySelector(".results-item-delete");
@@ -99,14 +116,14 @@ function closeResultsViewer() {
 
 async function deleteResult(result) {
 	const confirmDelete = confirm(
-		`Delete run: ${result.dataset} / ${result.model}?\n\nThis cannot be undone.`
+		`Delete run: ${result.dataset} / ${result.model}?\n\nThis cannot be undone.`,
 	);
 	if (!confirmDelete) return;
 
 	try {
 		const res = await fetch(
 			`/api/results/${result.dataset}/${result.model}/${result.timestamp}`,
-			{method: "DELETE"}
+			{ method: "DELETE" },
 		);
 
 		if (!res.ok) {
@@ -125,6 +142,12 @@ async function deleteCurrentResult() {
 	if (!currentResult) return;
 	deleteResult(currentResult);
 	closeResultsViewer();
+}
+
+function resumeResult(result) {
+	const runPath = `results/${result.dataset}/${result.model}/${result.timestamp}`;
+	localStorage.setItem("resumeFrom", runPath);
+	window.location.href = "/launch.html";
 }
 
 function chartColors() {

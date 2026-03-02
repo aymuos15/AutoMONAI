@@ -24,7 +24,19 @@ function formatRawCommand(cmd) {
 			groups.dataset.push(flagArg);
 		} else if (["metrics", "loss"].includes(flag)) {
 			groups.metrics.push(flagArg);
-		} else if (["epochs", "batch_size", "lr", "num_workers", "optimizer", "mixed_precision", "scheduler", "early_stopping", "patience"].includes(flag)) {
+		} else if (
+			[
+				"epochs",
+				"batch_size",
+				"lr",
+				"num_workers",
+				"optimizer",
+				"mixed_precision",
+				"scheduler",
+				"early_stopping",
+				"patience",
+			].includes(flag)
+		) {
 			groups.training.push(flagArg);
 		} else if (["img_size"].includes(flag)) {
 			groups.image.push(flagArg);
@@ -99,7 +111,19 @@ function formatCommand(cmd) {
 			groups.dataset.push(flagArg);
 		} else if (["metrics", "loss"].includes(flag)) {
 			groups.metrics.push(flagArg);
-		} else if (["epochs", "batch_size", "lr", "num_workers", "optimizer", "mixed_precision", "scheduler", "early_stopping", "patience"].includes(flag)) {
+		} else if (
+			[
+				"epochs",
+				"batch_size",
+				"lr",
+				"num_workers",
+				"optimizer",
+				"mixed_precision",
+				"scheduler",
+				"early_stopping",
+				"patience",
+			].includes(flag)
+		) {
 			groups.training.push(flagArg);
 		} else if (["img_size"].includes(flag)) {
 			groups.image.push(flagArg);
@@ -178,8 +202,12 @@ function updateCommand() {
 
 	const loss = document.getElementById("loss").value;
 	// Collect selected metrics from checkboxes
-	const metricsCheckboxes = document.querySelectorAll('input[name="metrics"]:checked');
-	const metrics = Array.from(metricsCheckboxes).map(cb => cb.value).join(' ');
+	const metricsCheckboxes = document.querySelectorAll(
+		'input[name="metrics"]:checked',
+	);
+	const metrics = Array.from(metricsCheckboxes)
+		.map((cb) => cb.value)
+		.join(" ");
 
 	const optimizer = document.getElementById("optimizer").value;
 	const mixed_precision = document.getElementById("mixed_precision").value;
@@ -190,7 +218,13 @@ function updateCommand() {
 	document.getElementById("aug_rotate_prob_val").textContent = aug_rotate_prob;
 	document.getElementById("aug_flip_prob_val").textContent = aug_flip_prob;
 
+	const resumeFrom = document.getElementById("resume_from")?.value;
+
 	let command = `python3 -m src.run --dataset ${dataset} --model ${model} --metrics ${metrics} --loss ${loss}`;
+
+	if (resumeFrom) {
+		command += ` --resume ${resumeFrom}`;
+	}
 
 	if (trainDataset && trainDataset !== "Dataset") {
 		command += ` --train_dataset_class ${trainDataset}`;
@@ -342,4 +376,100 @@ function updateSummaryPanel(
 
 	preprocRow.style.display = preprocHtml ? "flex" : "flex";
 	augRow.style.display = "flex";
+}
+
+let _resumeResults = [];
+
+async function loadResumeOptions() {
+	try {
+		const response = await fetch("/api/results");
+		_resumeResults = await response.json();
+
+		const resumeSelect = document.getElementById("resume_from");
+		if (!resumeSelect) return;
+
+		resumeSelect.innerHTML = '<option value="">-- New Training --</option>';
+
+		_resumeResults
+			.filter((r) => r.status === "complete")
+			.forEach((result) => {
+				const option = document.createElement("option");
+				const runPath = `results/${result.dataset}/${result.model}/${result.timestamp}`;
+				option.value = runPath;
+				option.textContent = `${result.dataset} / ${result.model} (${formatDate(result.timestamp)})`;
+				resumeSelect.appendChild(option);
+			});
+
+		const savedResume = localStorage.getItem("resumeFrom");
+		if (savedResume) {
+			resumeSelect.value = savedResume;
+			handleResumeSelect();
+			localStorage.removeItem("resumeFrom");
+		}
+	} catch (e) {
+		console.error("Failed to load resume options:", e);
+	}
+}
+
+function handleResumeSelect() {
+	const resumeSelect = document.getElementById("resume_from");
+	const selectedPath = resumeSelect?.value;
+
+	if (!selectedPath) {
+		updateCommand();
+		return;
+	}
+
+	const result = _resumeResults.find(
+		(r) => `results/${r.dataset}/${r.model}/${r.timestamp}` === selectedPath,
+	);
+
+	if (!result) {
+		updateCommand();
+		return;
+	}
+
+	const config = result.config || {};
+
+	if (config.dataset) {
+		document.getElementById("dataset").value = config.dataset;
+	}
+	if (config.model) {
+		document.getElementById("model").value = config.model;
+	}
+	if (config.epochs) {
+		document.getElementById("epochs").value = config.epochs;
+	}
+	if (config.batch_size) {
+		document.getElementById("batch_size").value = config.batch_size;
+	}
+	if (config.image_size) {
+		document.getElementById("img_size").value = config.image_size;
+	}
+	if (config.learning_rate) {
+		document.getElementById("lr").value = config.learning_rate;
+	}
+	if (config.optimizer) {
+		document.getElementById("optimizer").value = config.optimizer;
+	}
+	if (config.scheduler) {
+		document.getElementById("scheduler").value = config.scheduler;
+	}
+	if (config.mixed_precision) {
+		document.getElementById("mixed_precision").value = config.mixed_precision;
+	}
+	if (config.loss) {
+		document.getElementById("loss").value = config.loss;
+	}
+	if (config.num_workers) {
+		document.getElementById("num_workers").value = config.num_workers;
+	}
+	if (config.patience) {
+		document.getElementById("patience").value = config.patience;
+	}
+	if (config.early_stopping_enabled) {
+		document.getElementById("patience").value = config.patience || 10;
+	}
+
+	updateCommand();
 }

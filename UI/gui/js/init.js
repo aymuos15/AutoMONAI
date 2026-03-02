@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	loadDatasets();
 	loadModels();
 	loadDatasetClasses();
+	loadResumeOptions();
 
 	window.toggleTheme = toggleTheme;
 	window.switchPage = switchPage;
@@ -53,7 +54,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			const selected = document.querySelector(".tab-search-result.selected");
 			if (selected) {
 				const tabPage = selected.dataset.tabPage;
-				const tabId = selected.dataset.tabId === "null" ? null : selected.dataset.tabId;
+				const tabId =
+					selected.dataset.tabId === "null" ? null : selected.dataset.tabId;
 				selectTab({ page: tabPage, id: tabId });
 			}
 		} else if (e.key === "Escape") {

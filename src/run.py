@@ -46,7 +46,25 @@ def main():
         print(json.dumps(datasets))
         sys.exit(0)
 
-    dataset_name = args.dataset
+    resume_from = args.resume
+    resume_checkpoint = args.checkpoint
+    loaded_config = None
+    start_epoch = 0
+
+    if resume_from:
+        print(f"\n=== Resuming training from: {resume_from} ===")
+        print(f"Using checkpoint: {resume_checkpoint}")
+
+        loaded_config = RunLogger.load_run_config(resume_from)
+        checkpoint_path = RunLogger.get_checkpoint_path(resume_from, resume_checkpoint)
+        checkpoint_data = RunLogger.load_checkpoint(str(checkpoint_path))
+
+        start_epoch = checkpoint_data["epoch"]
+        print(f"Resuming from epoch: {start_epoch}")
+
+        dataset_name = loaded_config["dataset"]
+    else:
+        dataset_name = args.dataset
     dataset_info = DATASETS[dataset_name]
 
     print(f"\nSelected dataset: {dataset_name}")
@@ -58,7 +76,24 @@ def main():
     in_channels = len(dataset_info["channels"])
     out_channels = len(dataset_info["labels"])
 
-    print(f"\nSelected model: {args.model}")
+    if resume_from:
+        model_name = loaded_config["model"]
+        train_dataset_class = loaded_config.get("train_dataset_class", "Dataset")
+        inference_dataset_class = loaded_config.get("inference_dataset_class", "Dataset")
+        cache_rate = loaded_config.get("cache_rate", 1.0)
+        smart_replace_rate = loaded_config.get("smart_replace_rate")
+        cache_dir = loaded_config.get("cache_dir")
+        img_size = loaded_config.get("image_size", args.img_size)
+    else:
+        model_name = args.model
+        train_dataset_class = args.train_dataset_class
+        inference_dataset_class = args.inference_dataset_class
+        cache_rate = args.cache_rate
+        smart_replace_rate = args.smart_replace_rate
+        cache_dir = args.cache_dir
+        img_size = args.img_size
+
+    print(f"\nSelected model: {model_name}")
     print(f"  In channels: {in_channels}, Out channels: {out_channels}")
 
     train_files, is_3d = get_train_files(dataset_name)
@@ -74,42 +109,75 @@ def main():
         print("No training files found!")
         sys.exit(1)
 
-    print(f"\nDataset class (train): {args.train_dataset_class}")
-    print(f"Dataset class (inference): {args.inference_dataset_class}")
-    if args.cache_rate < 1.0:
+    print(f"\nDataset class (train): {train_dataset_class}")
+    print(f"Dataset class (inference): {inference_dataset_class}")
+    if resume_from:
+        print(f"Cache rate: {cache_rate}")
+    elif args.cache_rate < 1.0:
         print(f"Cache rate: {args.cache_rate}")
-    if args.smart_replace_rate:
+    if resume_from:
+        print(f"Smart cache replace rate: {smart_replace_rate or 'N/A'}")
+    elif args.smart_replace_rate:
         print(f"Smart cache replace rate: {args.smart_replace_rate}")
-    if args.cache_dir:
+    if resume_from:
+        print(f"Cache dir: {cache_dir or 'N/A'}")
+    elif args.cache_dir:
         print(f"Cache dir: {args.cache_dir}")
 
     # Initialize run logger
-    logger = RunLogger(dataset_name, args.model)
+    logger = RunLogger(dataset_name, model_name, resume_from=resume_from)
 
     # Save configuration
-    config = {
-        "dataset": dataset_name,
-        "model": args.model,
-        "epochs": args.epochs,
-        "batch_size": args.batch_size,
-        "learning_rate": args.lr,
-        "image_size": args.img_size,
-        "num_workers": args.num_workers,
-        "loss": args.loss,
-        "metrics": args.metrics,
-        "device": args.device,
-        "spatial_dims": spatial_dims,
-        "train_dataset_class": args.train_dataset_class,
-        "inference_dataset_class": args.inference_dataset_class,
-        "normalization": args.norm,
-        "crop": args.crop,
-        "augmentation_enabled": args.augment,
-        "optimizer": args.optimizer,
-        "mixed_precision": args.mixed_precision,
-        "scheduler": args.scheduler,
-        "early_stopping_enabled": args.early_stopping,
-        "patience": args.patience,
-    }
+    if resume_from:
+        config = loaded_config.copy()
+        config["epochs"] = args.epochs
+        config["learning_rate"] = args.lr
+        config["batch_size"] = args.batch_size
+        config["num_workers"] = loaded_config.get("num_workers", args.num_workers)
+        config["loss"] = loaded_config.get("loss", args.loss)
+        config["metrics"] = loaded_config.get("metrics", args.metrics)
+        config["device"] = loaded_config.get("device", args.device)
+        config["image_size"] = img_size
+        config["train_dataset_class"] = train_dataset_class
+        config["inference_dataset_class"] = inference_dataset_class
+        config["cache_rate"] = cache_rate
+        config["smart_replace_rate"] = smart_replace_rate
+        config["cache_dir"] = cache_dir
+        config["normalization"] = loaded_config.get("normalization", [])
+        config["crop"] = loaded_config.get("crop", [])
+        config["augmentation_enabled"] = loaded_config.get("augmentation_enabled", False)
+        config["optimizer"] = args.optimizer
+        config["scheduler"] = args.scheduler
+        config["mixed_precision"] = args.mixed_precision
+        config["early_stopping_enabled"] = args.early_stopping
+        config["patience"] = args.patience
+        config["resume_from"] = resume_from
+        config["resume_checkpoint"] = resume_checkpoint
+        config["start_epoch"] = start_epoch
+    else:
+        config = {
+            "dataset": dataset_name,
+            "model": model_name,
+            "epochs": args.epochs,
+            "batch_size": args.batch_size,
+            "learning_rate": args.lr,
+            "image_size": args.img_size,
+            "num_workers": args.num_workers,
+            "loss": args.loss,
+            "metrics": args.metrics,
+            "device": args.device,
+            "spatial_dims": spatial_dims,
+            "train_dataset_class": train_dataset_class,
+            "inference_dataset_class": inference_dataset_class,
+            "normalization": args.norm,
+            "crop": args.crop,
+            "augmentation_enabled": args.augment,
+            "optimizer": args.optimizer,
+            "mixed_precision": args.mixed_precision,
+            "scheduler": args.scheduler,
+            "early_stopping_enabled": args.early_stopping,
+            "patience": args.patience,
+        }
     logger.save_config(config)
 
     # Initialize Fabric for device and distributed training management
@@ -120,83 +188,102 @@ def main():
     print(f"Using device: {fabric.device}")
 
     train_transforms = get_transforms(
-        args.img_size, spatial_dims, norm=args.norm, crop=args.crop, is_train=True
+        img_size, spatial_dims, norm=args.norm, crop=args.crop, is_train=True
     )
     label_transforms = get_transforms(
-        args.img_size, spatial_dims, norm=args.norm, crop=args.crop, is_train=True
+        img_size, spatial_dims, norm=args.norm, crop=args.crop, is_train=True
     )
     test_transforms = get_transforms(
-        args.img_size, spatial_dims, norm=args.norm, crop=args.crop, is_train=False
+        img_size, spatial_dims, norm=args.norm, crop=args.crop, is_train=False
     )
 
-    if args.train_dataset_class == "Dataset":
+    if train_dataset_class == "Dataset":
         train_ds = TrainDataset(
             train_files, transform=train_transforms, label_transform=label_transforms
         )
     else:
         dict_transform = DictTransform(train_transforms, label_transforms)
         train_ds = create_train_dataset(
-            args.train_dataset_class,
+            train_dataset_class,
             train_files,
             dict_transform,
             label_transforms,
-            cache_rate=args.cache_rate,
-            replace_rate=args.smart_replace_rate,
-            cache_dir=args.cache_dir,
+            cache_rate=cache_rate,
+            replace_rate=smart_replace_rate,
+            cache_dir=cache_dir,
         )
 
     train_loader = DataLoader(
-        train_ds, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers
+        train_ds, batch_size=config["batch_size"], shuffle=True, num_workers=config["num_workers"]
     )
 
-    if args.inference_dataset_class == "Dataset":
+    if inference_dataset_class == "Dataset":
         test_ds = TestDataset(test_files, transform=test_transforms)
     else:
         test_ds = create_inference_dataset(
-            args.inference_dataset_class,
+            inference_dataset_class,
             test_files,
             test_transforms,
-            cache_rate=args.cache_rate,
-            cache_dir=args.cache_dir,
+            cache_rate=cache_rate,
+            cache_dir=cache_dir,
         )
 
-    test_loader = DataLoader(test_ds, batch_size=1, shuffle=False, num_workers=args.num_workers)
+    test_loader = DataLoader(
+        test_ds, batch_size=1, shuffle=False, num_workers=config["num_workers"]
+    )
 
-    model = get_model(args.model, in_channels, out_channels, spatial_dims, args.img_size)
-    loss_fn = get_loss(args.loss)
+    model = get_model(model_name, in_channels, out_channels, spatial_dims, config["image_size"])
+    loss_fn = get_loss(config["loss"])
 
-    # Create optimizer based on user selection
-    if args.optimizer == "adamw":
-        optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
-    elif args.optimizer == "sgd":
-        optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
+    # Create optimizer based on config
+    if config["optimizer"] == "adamw":
+        optimizer = torch.optim.AdamW(model.parameters(), lr=config["learning_rate"])
+    elif config["optimizer"] == "sgd":
+        optimizer = torch.optim.SGD(model.parameters(), lr=config["learning_rate"], momentum=0.9)
     else:  # adam
-        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+        optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
 
     # Setup model, optimizer, and dataloaders with Fabric
     model, optimizer = fabric.setup(model, optimizer)
     train_loader, test_loader = fabric.setup_dataloaders(train_loader, test_loader)
 
+    # Load checkpoint if resuming
+    if resume_from:
+        checkpoint_path = RunLogger.get_checkpoint_path(resume_from, resume_checkpoint)
+        checkpoint_data = RunLogger.load_checkpoint(str(checkpoint_path))
+        model.load_state_dict(checkpoint_data["model_state"])
+        if checkpoint_data["optimizer_state"] is not None:
+            optimizer.load_state_dict(checkpoint_data["optimizer_state"])
+        print(f"Loaded checkpoint from epoch {checkpoint_data['epoch']}")
+
     # Setup learning rate scheduler
-    if args.scheduler == "cosine":
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
-    elif args.scheduler == "step":
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=max(1, args.epochs // 3), gamma=0.1)
-    elif args.scheduler == "plateau":
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=max(1, args.patience // 2))
+    if config["scheduler"] == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config["epochs"])
+    elif config["scheduler"] == "step":
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=max(1, config["epochs"] // 3), gamma=0.1
+        )
+    elif config["scheduler"] == "plateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, patience=max(1, config["patience"] // 2)
+        )
     else:
         scheduler = None
 
-    # Early stopping state
     no_improve_count = 0
 
-    print(f"\nTraining for {args.epochs} epoch(s)...")
+    total_epochs = config["epochs"]
+    if resume_from:
+        print(f"\nResuming training from epoch {start_epoch}, for {total_epochs} total epochs...")
+    else:
+        print(f"\nTraining for {total_epochs} epoch(s)...")
+
     best_loss = float("inf")
-    for epoch in range(args.epochs):
-        result = train_one_epoch(fabric, model, train_loader, loss_fn, optimizer, args.metrics)
+    for epoch in range(total_epochs):
+        current_epoch = start_epoch + epoch + 1
+        result = train_one_epoch(fabric, model, train_loader, loss_fn, optimizer, config["metrics"])
         loss = result["loss"]
 
-        # Log epoch metrics
         epoch_metrics = {"loss": loss}
         if "dice" in result:
             epoch_metrics["dice"] = result["dice"]
@@ -205,50 +292,51 @@ def main():
 
         logger.log_epoch(epoch, epoch_metrics)
 
-        # Check if best model
         is_best = loss < best_loss
         if is_best:
             best_loss = loss
 
-        # Save checkpoint
         logger.save_checkpoint(model, epoch, optimizer, is_best=is_best)
 
-        # Step learning rate scheduler
         if scheduler is not None:
             if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                 scheduler.step(loss)
             else:
                 scheduler.step()
 
-        # Early stopping check
-        if args.early_stopping:
+        if config["early_stopping_enabled"]:
             if not is_best:
                 no_improve_count += 1
-                if no_improve_count >= args.patience:
-                    print(f"Early stopping triggered after {epoch + 1} epochs (no improvement for {args.patience} epochs).")
+                if no_improve_count >= config["patience"]:
+                    print(
+                        f"Early stopping triggered after {current_epoch} epochs (no improvement for {config['patience']} epochs)."
+                    )
                     break
             else:
                 no_improve_count = 0
 
-        log_msg = f"Epoch {epoch + 1}/{args.epochs} - Loss: {loss:.4f}"
+        log_msg = f"Epoch {current_epoch}/{total_epochs} - Loss: {loss:.4f}"
         if "dice" in result:
             log_msg += f" - Dice: {result['dice']:.4f}"
         if "iou" in result:
             log_msg += f" - IoU: {result['iou']:.4f}"
         print(log_msg)
 
-    # Save final summary
+    final_epoch = start_epoch + total_epochs
     summary = {
-        "total_epochs": args.epochs,
+        "total_epochs": final_epoch,
+        "epochs_trained": total_epochs,
         "best_loss": best_loss,
         "final_metrics": epoch_metrics,
         "dataset": dataset_name,
-        "model": args.model,
+        "model": model_name,
     }
+    if resume_from:
+        summary["resumed_from"] = resume_from
     logger.save_final_summary(summary)
 
     if args.save_predictions:
-        save_dir = Path(args.output_dir) / dataset_name / args.model
+        save_dir = Path(args.output_dir) / dataset_name / model_name
         print(f"\nRunning inference on {len(test_files)} test samples...")
         print(f"Saving predictions to: {save_dir}")
         infer(fabric, model, test_loader, str(save_dir), spatial_dims)

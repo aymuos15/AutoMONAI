@@ -237,5 +237,17 @@ def get_parser():
         default=TRAINING_DEFAULTS["patience"],
         help="Patience for early stopping (number of epochs with no improvement before stopping)",
     )
+    parser.add_argument(
+        "--resume",
+        type=str,
+        default=None,
+        help="Path to a previous run directory to resume training from (e.g., results/dataset/model/timestamp)",
+    )
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default="best_model.pt",
+        help="Checkpoint file to load when resuming (default: best_model.pt)",
+    )
 
     return parser

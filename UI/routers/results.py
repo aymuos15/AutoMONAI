@@ -36,8 +36,9 @@ async def get_results():
                 summary_file = run_dir / "summary.json"
                 metrics_file = run_dir / "metrics.csv"
 
-                if not config_file.exists() or not summary_file.exists():
-                    continue
+                status = "in_progress"
+                if summary_file.exists():
+                    status = "complete"
 
                 try:
                     with open(config_file) as f:
@@ -72,6 +73,7 @@ async def get_results():
                         "metrics": metrics,
                         "epochs": summary.get("total_epochs", 0),
                         "best_loss": summary.get("best_loss", 0),
+                        "status": status,
                     }
                     results.append(result)
                 except Exception as e:
