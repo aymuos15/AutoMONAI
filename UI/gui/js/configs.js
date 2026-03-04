@@ -154,6 +154,7 @@ function renderConfigs(configs, activeRuns = {}) {
 					<div class="progress-text card-progress-text">${pct > 0 ? escapeHtml(name) + " \u00b7 " + pct + "%" : escapeHtml(name)}</div>
 				</div>
 				<button type="button" class="cmd-link launch-link card-launch-btn" onclick="cardLaunch('${name}')" ${hideLaunch ? 'style="display:none"' : ""}>Launch</button>
+				<button type="button" class="cmd-link launch-link card-infer-btn" onclick="cardInfer('${name}')" ${isDone ? '' : 'style="display:none"'}>Infer</button>
 				<button type="button" class="cmd-link launch-link card-stop-btn" onclick="cardStop('${name}')" ${hideStop ? 'style="display:none"' : ""}>Stop</button>
 			</div>
 			<div class="output full-width card-command-preview" style="display:none; margin-top:12px;">${escapeHtml(config.command)}</div>
@@ -240,6 +241,42 @@ async function cardLaunch(name) {
 	}
 }
 
+async function cardInfer(name) {
+	// Fetch the config's command and append --mode infer
+	let command;
+	try {
+		const res = await fetch(`/api/configs/get/${encodeURIComponent(name)}`);
+		if (!res.ok) throw new Error("Config not found");
+		const config = await res.json();
+		command = config.command.replace(/\s*\\\s*/g, " ").replace(/\s+/g, " ").trim();
+		command += " --mode infer";
+	} catch (e) {
+		alert("Error loading config: " + e.message);
+		return;
+	}
+
+	try {
+		const res = await fetch("/api/launch", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ command, run_id: name }),
+		});
+
+		if (!res.ok) {
+			const data = await res.json();
+			alert(`Error: ${data.detail}`);
+			return;
+		}
+
+		_cardState.set(name, { eventSource: null, totalEpochs: 0, currentEpoch: 0, running: true, done: false, inferring: true });
+		_cardSetRunningUI(name, true);
+		_cardSetProgress(name, 0);
+		_cardStartLogStream(name);
+	} catch (e) {
+		alert(`Error: ${e.message}`);
+	}
+}
+
 async function cardStop(name) {
 	const state = _cardState.get(name);
 	if (state) state.stopped = true;
@@ -260,6 +297,7 @@ function _cardSetRunningUI(name, running, done = false) {
 	if (!card) return;
 
 	const launchBtn = card.querySelector(".card-launch-btn");
+	const inferBtn = card.querySelector(".card-infer-btn");
 	const stopBtn = card.querySelector(".card-stop-btn");
 	const spinner = card.querySelector(".card-spinner");
 
@@ -267,12 +305,15 @@ function _cardSetRunningUI(name, running, done = false) {
 
 	if (done) {
 		launchBtn.style.display = "none";
+		inferBtn.style.display = "";
 		stopBtn.style.display = "none";
 	} else if (running) {
 		launchBtn.style.display = "none";
+		inferBtn.style.display = "none";
 		stopBtn.style.display = "";
 	} else {
 		launchBtn.style.display = "";
+		inferBtn.style.display = "none";
 		stopBtn.style.display = "none";
 	}
 }
@@ -299,6 +340,11 @@ function _cardStartLogStream(name) {
 		if (epochMatch) {
 			state.currentEpoch = parseInt(epochMatch[1]);
 			state.totalEpochs = parseInt(epochMatch[2]);
+		}
+		const inferMatch = line.match(/Inference\s+(\d+)\/(\d+)/);
+		if (inferMatch) {
+			state.currentEpoch = parseInt(inferMatch[1]);
+			state.totalEpochs = parseInt(inferMatch[2]);
 		}
 		_cardUpdateProgress(name);
 	};
@@ -500,6 +546,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // Explicit exports for config management
 window.deleteConfig = deleteConfig;
 window.cardLaunch = cardLaunch;
+window.cardInfer = cardInfer;
 window.cardStop = cardStop;
 window.cardToggleConfig = cardToggleConfig;
 window.loadConfig = loadConfig;

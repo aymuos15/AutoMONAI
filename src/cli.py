@@ -259,5 +259,12 @@ def get_parser():
         default=None,
         help="Stable run ID for W&B (reuses same run on re-launch)",
     )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default="train",
+        choices=["train", "infer"],
+        help="Run mode: train (default) or infer (evaluate test set with metrics)",
+    )
 
     return parser

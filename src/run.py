@@ -27,6 +27,7 @@ from .cli import get_parser, print_config
 from .dataset import (
     get_train_files,
     get_test_files,
+    get_test_files_with_labels,
     create_train_dataset,
     create_inference_dataset,
     TrainDataset,
@@ -34,7 +35,7 @@ from .dataset import (
     DictTransform,
 )
 from .models import get_model
-from .inference import infer
+from .inference import infer, infer_with_metrics
 from .results import RunLogger
 from .train import train_one_epoch, get_loss
 from .transforms import get_transforms
@@ -69,13 +70,17 @@ def main():
         print(json.dumps(datasets))
         sys.exit(0)
 
+    if args.mode == "infer" and not args.resume:
+        print("Error: --resume is required for inference mode")
+        sys.exit(1)
+
     resume_from = args.resume
     resume_checkpoint = args.checkpoint
     loaded_config = None
     start_epoch = 0
 
     if resume_from:
-        print(f"\n=== Resuming training from: {resume_from} ===")
+        print(f"\n=== Resuming from: {resume_from} ===")
         print(f"Using checkpoint: {resume_checkpoint}")
 
         checkpoint_path = RunLogger.get_checkpoint_path(resume_from, resume_checkpoint)
@@ -134,7 +139,7 @@ def main():
     print(f"Training files: {len(train_files)}")
     print(f"Test files: {len(test_files)}")
 
-    if not train_files:
+    if args.mode == "train" and not train_files:
         print("No training files found!")
         sys.exit(1)
 
@@ -299,6 +304,44 @@ def main():
         if checkpoint_data["optimizer_state"] is not None:
             optimizer.load_state_dict(checkpoint_data["optimizer_state"])
         print(f"Loaded checkpoint from epoch {checkpoint_data['epoch']}")
+
+    # Inference mode: evaluate test set with metrics, log to W&B, exit
+    if args.mode == "infer":
+        test_files_labeled, _ = get_test_files_with_labels(dataset_name)
+        if not test_files_labeled:
+            print("No labeled test files found (need imagesTs/ + labelsTs/)!")
+            sys.exit(1)
+
+        print(f"\n=== Inference mode ===")
+        print(f"Labeled test files: {len(test_files_labeled)}")
+
+        labeled_test_ds = TrainDataset(
+            test_files_labeled, transform=test_transforms, label_transform=test_transforms
+        )
+        labeled_test_loader = DataLoader(
+            labeled_test_ds, batch_size=1, shuffle=False, num_workers=config["num_workers"]
+        )
+        labeled_test_loader = fabric.setup_dataloaders(labeled_test_loader)
+
+        save_dir = str(Path(args.output_dir) / dataset_name / model_name) if args.save_predictions else None
+        results = infer_with_metrics(
+            fabric, model, labeled_test_loader,
+            config["metrics"], out_channels,
+            save_dir=save_dir, spatial_dims=spatial_dims,
+        )
+
+        # Log to W&B chart + summary with infer/ prefix
+        wandb_metrics = {f"infer/{k}": v for k, v in results.items()}
+        wandb.log(wandb_metrics)
+        for k, v in wandb_metrics.items():
+            wandb.summary[k] = v
+
+        summary_parts = [f"{k}: {v:.4f}" for k, v in results.items()]
+        print(f"\nInference results: {' - '.join(summary_parts)}")
+        if save_dir:
+            print(f"Predictions saved to: {save_dir}")
+        wandb.finish()
+        sys.exit(0)
 
     # Setup learning rate scheduler
     if config["scheduler"] == "cosine":

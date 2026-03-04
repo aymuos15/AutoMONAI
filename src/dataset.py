@@ -75,6 +75,39 @@ def get_test_files(dataset_name):
     return [{"image": str(f)} for f in image_files], is_3d
 
 
+def get_test_files_with_labels(dataset_name):
+    dataset_path = Path(DATASET_ROOT) / dataset_name
+    images_dir = dataset_path / "imagesTs"
+    labels_dir = dataset_path / "labelsTs"
+
+    image_files = (
+        sorted(images_dir.glob("*_0000.png"))
+        + sorted(images_dir.glob("*_0000.nii.gz"))
+        + sorted(images_dir.glob("*_0000.tif"))
+    )
+
+    is_3d = any(f.suffixes == [".nii", ".gz"] or f.suffix == ".nii.gz" for f in image_files)
+
+    files = []
+    for img in image_files:
+        base_name = img.name.split("_")[0]
+        if img.name.startswith("hippocampus"):
+            base_name = "_".join(img.name.split("_")[:2])
+
+        if img.name.endswith(".nii.gz"):
+            label_name = base_name + ".nii.gz"
+        elif img.name.endswith(".tif"):
+            label_name = base_name + ".png"
+        else:
+            label_name = base_name + ".png"
+
+        label_path = labels_dir / label_name
+        if label_path.exists():
+            files.append({"image": str(img), "label": str(label_path)})
+
+    return files, is_3d
+
+
 class TrainDataset(Dataset):
     def __init__(self, files, transform=None, label_transform=None):
         super().__init__(files, transform)

@@ -1,3 +1,5 @@
+import torch
+import torch.nn.functional as F
 from monai.metrics import DiceMetric, MeanIoU
 from monai.losses import DiceLoss, FocalLoss
 import torch.nn as nn
@@ -66,7 +68,13 @@ def train_one_epoch(fabric: Fabric, model, train_loader, loss_fn, optimizer, met
         total_loss += loss.item()
 
         if metric_aggregators:
-            compute_metrics(metric_aggregators, outputs, labels)
+            with torch.no_grad():
+                num_classes = outputs.shape[1]
+                preds = torch.softmax(outputs, dim=1)
+                preds_onehot = (preds == preds.max(dim=1, keepdim=True).values).float()
+                labels_onehot = F.one_hot(labels.squeeze(1).long(), num_classes)
+                labels_onehot = labels_onehot.permute(0, 3, 1, 2).float()
+            compute_metrics(metric_aggregators, preds_onehot, labels_onehot)
 
     avg_loss = total_loss / len(train_loader)
     result = {"loss": avg_loss}
