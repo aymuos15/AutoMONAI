@@ -136,7 +136,15 @@ function renderConfigs(configs, activeRuns = {}) {
 			? "base"
 			: diffs.map(d => `${d.key}: ${d.value}`).join(" · ");
 		const name = config.name;
-		const isRunning = activeRuns[name]?.running === true;
+		const status = config.status || "idle";
+		const isRunning = status === "running" || activeRuns[name]?.running === true;
+		const isDone = status === "done";
+		const epochs = parseInt(config.command.match(/--epochs\s+(\d+)/)?.[1]) || 1;
+		const ckptEpoch = config.checkpoint_epoch || 0;
+		const pct = isDone ? 100 : (epochs > 0 ? Math.round((ckptEpoch / epochs) * 100) : 0);
+
+		const hideLaunch = isRunning || isDone;
+		const hideStop = !isRunning;
 
 		return `<div class="launch-bar config-card" id="card-${name}">
 			<div class="launch-config-line">
@@ -145,25 +153,36 @@ function renderConfigs(configs, activeRuns = {}) {
 			</div>
 			<div class="launch-progress-container">
 				<div class="progress-bar">
-					<div class="progress-fill card-progress-fill"></div>
-					<div class="progress-text card-progress-text">0%</div>
+					<div class="progress-fill card-progress-fill" style="width:${pct}%"></div>
+					<div class="progress-text card-progress-text">${pct > 0 ? escapeHtml(name) + " \u00b7 " + pct + "%" : escapeHtml(name)}</div>
 				</div>
-				<button type="button" class="cmd-link launch-link card-launch-btn" onclick="cardLaunch('${name}')" ${isRunning ? 'style="display:none"' : ""}>Launch</button>
-				<button type="button" class="cmd-link launch-link card-stop-btn" onclick="cardStop('${name}')" ${isRunning ? "" : 'style="display:none"'}>Stop</button>
+				<button type="button" class="cmd-link launch-link card-launch-btn" onclick="cardLaunch('${name}')" ${hideLaunch ? 'style="display:none"' : ""}>Launch</button>
+				<button type="button" class="cmd-link launch-link card-stop-btn" onclick="cardStop('${name}')" ${hideStop ? 'style="display:none"' : ""}>Stop</button>
 			</div>
 			<div class="output full-width card-command-preview" style="display:none; margin-top:12px;">${escapeHtml(config.command)}</div>
 			<div class="card-terminal" style="display:none; max-height:200px; overflow-y:auto; font-family:var(--font-mono); font-size:0.7rem; background:var(--bg); padding:8px; border:1px solid var(--border); margin-top:8px;"></div>
 		</div>`;
 	}).join("");
 
-	// Re-attach SSE streams for already-running configs
+	// Re-attach SSE streams for running configs, set done/progress state
 	for (const config of configs) {
 		const name = config.name;
-		if (activeRuns[name]?.running) {
-			const epochs = parseInt(config.command.match(/--epochs\s+(\d+)/)?.[1]) || 1;
-			_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: 0, running: true });
+		const status = config.status || "idle";
+		const isRunning = status === "running" || activeRuns[name]?.running;
+		const epochs = parseInt(config.command.match(/--epochs\s+(\d+)/)?.[1]) || 1;
+		const ckptEpoch = config.checkpoint_epoch || 0;
+
+		if (isRunning) {
+			_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: ckptEpoch, running: true, done: false });
 			_cardSetRunningUI(name, true);
+			_cardUpdateProgress(name);
 			_cardStartLogStream(name);
+		} else if (status === "done") {
+			_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: epochs, running: false, done: true });
+		} else if (ckptEpoch > 0) {
+			// Idle but has checkpoint progress — show it
+			_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: ckptEpoch, running: false, done: false });
+			_cardUpdateProgress(name);
 		}
 	}
 }
@@ -188,6 +207,9 @@ function cardToggleFull(name) {
 }
 
 async function cardLaunch(name) {
+	const existingState = _cardState.get(name);
+	if (existingState?.done) return;
+
 	// Fetch the config's command
 	let command;
 	try {
@@ -218,7 +240,8 @@ async function cardLaunch(name) {
 		}
 
 		const epochs = parseInt(command.match(/--epochs\s+(\d+)/)?.[1]) || 1;
-		_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: 0, running: true });
+		const prev = _cardState.get(name);
+		_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: prev?.currentEpoch || 0, running: true });
 		_cardSetRunningUI(name, true);
 		_cardClearTerminal(name);
 		_cardUpdateProgress(name);
@@ -229,6 +252,9 @@ async function cardLaunch(name) {
 }
 
 async function cardStop(name) {
+	const state = _cardState.get(name);
+	if (state) state.stopped = true;
+
 	try {
 		await fetch("/api/launch/stop", {
 			method: "POST",
@@ -238,14 +264,18 @@ async function cardStop(name) {
 	} catch (_) {}
 }
 
-function _cardSetRunningUI(name, running) {
+function _cardSetRunningUI(name, running, done = false) {
 	const card = document.getElementById(`card-${name}`);
 	if (!card) return;
 
 	const launchBtn = card.querySelector(".card-launch-btn");
 	const stopBtn = card.querySelector(".card-stop-btn");
 
-	if (running) {
+	if (done) {
+		// Run completed — hide both buttons
+		launchBtn.style.display = "none";
+		stopBtn.style.display = "none";
+	} else if (running) {
 		launchBtn.style.display = "none";
 		stopBtn.style.display = "";
 	} else {
@@ -275,13 +305,20 @@ function _cardStartLogStream(name) {
 	es.onmessage = (e) => _cardAppendLog(name, e.data);
 
 	es.addEventListener("done", () => {
-		_cardSetRunningUI(name, false);
 		es.close();
 		state.eventSource = null;
 		state.running = false;
-		// Set progress to 100% on completion
-		_cardSetProgress(name, 100);
-		if (typeof loadResults === "function") loadResults();
+
+		if (state.stopped) {
+			// User stopped — allow re-launch
+			state.stopped = false;
+			_cardSetRunningUI(name, false);
+		} else {
+			// Natural completion — block re-launch
+			state.done = true;
+			_cardSetRunningUI(name, false, true);
+			_cardSetProgress(name, 100);
+		}
 	});
 
 	es.onerror = () => {
@@ -304,6 +341,13 @@ function _cardAppendLog(name, line) {
 
 	const state = _cardState.get(name);
 	if (!state) return;
+
+	// Pick up resume starting point
+	const resumeMatch = line.match(/Resuming training from epoch (\d+)\/(\d+)/);
+	if (resumeMatch) {
+		state.currentEpoch = parseInt(resumeMatch[1]);
+		state.totalEpochs = parseInt(resumeMatch[2]);
+	}
 
 	const epochMatch = line.match(/Epoch\s+(\d+)\/(\d+)/);
 	if (epochMatch) {
@@ -333,7 +377,8 @@ function _cardSetProgress(name, pct) {
 	const text = card.querySelector(".card-progress-text");
 
 	fill.style.width = pct + "%";
-	text.textContent = pct + "%";
+	const runName = name || "";
+	text.textContent = pct > 0 ? `${runName} · ${pct}%` : runName;
 }
 
 async function loadConfig(configName) {

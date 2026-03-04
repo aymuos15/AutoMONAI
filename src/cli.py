@@ -253,5 +253,11 @@ def get_parser():
         default="best_model.pt",
         help="Checkpoint file to load when resuming (default: best_model.pt)",
     )
+    parser.add_argument(
+        "--run_id",
+        type=str,
+        default=None,
+        help="Stable run ID for W&B (reuses same run on re-launch)",
+    )
 
     return parser

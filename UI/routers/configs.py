@@ -1,6 +1,7 @@
 """Saved configs management API routes."""
 
 import json
+import re
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -10,6 +11,23 @@ router = APIRouter()
 # Directory to store saved configs
 CONFIGS_DIR = Path(__file__).parent.parent / "configs"
 CONFIGS_DIR.mkdir(exist_ok=True)
+
+
+def _reset_stale_running():
+    """On startup, reset any configs stuck in 'running' back to 'idle'."""
+    for config_file in CONFIGS_DIR.glob("*.json"):
+        try:
+            with open(config_file) as f:
+                data = json.load(f)
+            if data.get("status") == "running":
+                data["status"] = "idle"
+                with open(config_file, "w") as f:
+                    json.dump(data, f, indent=2)
+        except Exception:
+            pass
+
+
+_reset_stale_running()
 
 
 class ConfigRequest(BaseModel):
@@ -25,6 +43,25 @@ def get_config_path(name: str) -> Path:
     # Sanitize filename
     safe_name = "".join(c for c in name if c.isalnum() or c in "-_")
     return CONFIGS_DIR / f"{safe_name}.json"
+
+
+_EPOCH_RE = re.compile(r"epoch_(\d+)\.pt$")
+
+
+def _get_checkpoint_epoch(config_data: dict) -> int:
+    """Return the highest completed epoch from a config's run_dir, or 0."""
+    run_dir = config_data.get("run_dir")
+    if not run_dir:
+        return 0
+    ckpt_dir = Path(run_dir) / "checkpoints"
+    if not ckpt_dir.is_dir():
+        return 0
+    max_epoch = 0
+    for f in ckpt_dir.iterdir():
+        m = _EPOCH_RE.search(f.name)
+        if m:
+            max_epoch = max(max_epoch, int(m.group(1)))
+    return max_epoch
 
 
 @router.post("/api/configs/save")
@@ -62,6 +99,7 @@ async def list_configs():
         try:
             with open(config_file) as f:
                 config_data = json.load(f)
+                config_data["checkpoint_epoch"] = _get_checkpoint_epoch(config_data)
                 configs.append(config_data)
         except Exception as e:
             print(f"Error reading config {config_file}: {e}")
@@ -83,6 +121,42 @@ async def get_config(config_name: str):
         return config_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading config: {e}")
+
+
+@router.patch("/api/configs/status/{config_name}")
+async def update_config_status(config_name: str, status: str):
+    """Update the status field of a config (idle, running, done)."""
+    path = get_config_path(config_name)
+    if not path.exists():
+        return
+    try:
+        with open(path) as f:
+            config_data = json.load(f)
+        config_data["status"] = status
+        with open(path, "w") as f:
+            json.dump(config_data, f, indent=2)
+    except Exception:
+        pass
+
+
+def set_config_status(config_name: str, status: str):
+    """Set config status synchronously (for use from drain thread)."""
+    set_config_field(config_name, "status", status)
+
+
+def set_config_field(config_name: str, key: str, value):
+    """Set an arbitrary field on a config JSON file."""
+    path = get_config_path(config_name)
+    if not path.exists():
+        return
+    try:
+        with open(path) as f:
+            config_data = json.load(f)
+        config_data[key] = value
+        with open(path, "w") as f:
+            json.dump(config_data, f, indent=2)
+    except Exception:
+        pass
 
 
 @router.delete("/api/configs/delete/{config_name}")

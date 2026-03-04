@@ -11,10 +11,10 @@
     <link rel="stylesheet" href="/static/styles/components.css">
     <link rel="stylesheet" href="/static/styles/augmentation.css">
     <link rel="stylesheet" href="/static/styles/modals.css">
-    <link rel="stylesheet" href="/static/styles/results.css">
+
     <link rel="stylesheet" href="/static/styles/launch.css">
     <link rel="stylesheet" href="/static/styles/configs.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+
 </head>
 <body>
     <div class="container">
@@ -22,7 +22,6 @@
             <button type="button" class="nav-tab active" onclick="switchPage('generate')">Generate</button>
             <button type="button" class="nav-tab" onclick="switchPage('docs')">Docs</button>
             <button type="button" class="nav-tab" onclick="switchPage('configs')">Configs</button>
-            <button type="button" class="nav-tab" onclick="switchPage('results')">Results</button>
         </div>
 
         <div id="generate-page" class="page active">
@@ -467,40 +466,6 @@
             <div id="configs-list"></div>
         </div>
 
-        <div id="results-page" class="page">
-            <div class="results-search">
-                <input type="text" id="results-search" placeholder="Filter runs..." oninput="filterResults()" autocomplete="off">
-            </div>
-
-            <div id="results-list">
-                <div class="results-empty">Loading...</div>
-            </div>
-
-            <div id="results-viewer" style="display: none;">
-                <div class="launch-bar config-card">
-                    <div class="launch-config-line">
-                        <span class="config-text" id="results-title"></span>
-                        <span class="card-actions"><button type="button" class="cmd-link" onclick="closeResultsViewer()">Back</button><button type="button" class="cmd-link delete-link" onclick="deleteCurrentResult()">Delete</button></span>
-                    </div>
-                </div>
-
-                <div class="results-section">
-                    <label>Loss</label>
-                    <div class="results-chart-wrap">
-                        <canvas id="loss-chart"></canvas>
-                    </div>
-                </div>
-
-                <div class="results-section">
-                    <label>Metrics</label>
-                    <div class="results-chart-wrap">
-                        <canvas id="metrics-chart"></canvas>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
     </div>
 
     <div class="footer">
@@ -548,7 +513,7 @@
     <script src="/static/js/nav.js"></script>
     <script src="/static/js/search.js"></script>
     <script src="/static/js/configs.js?v=2"></script>
-    <script src="/static/results.js?v=1"></script>
+
     <script src="/static/launch.js?v=2"></script>
     <script src="/static/js/init.js"></script>
 </body>

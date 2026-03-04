@@ -1,15 +1,20 @@
 """Training launch API routes with live log streaming."""
 
 import asyncio
+import json
+import re
 import shlex
 import subprocess
 import threading
 import time
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+
+from UI.routers.configs import get_config_path, set_config_status, set_config_field
 
 router = APIRouter()
 
@@ -42,11 +47,71 @@ def _get_run(run_id: str) -> Optional[dict]:
         return entry
 
 
+_RUN_DIR_RE = re.compile(r"Run directory created: (.+)")
+
+
+def _find_resume_checkpoint(run_id: str) -> tuple[Optional[str], Optional[str]]:
+    """Find the best checkpoint to resume from using the config's stored run_dir."""
+    cfg_path = get_config_path(run_id)
+    if not cfg_path.exists():
+        return None, None
+    try:
+        with open(cfg_path) as f:
+            cfg_data = json.load(f)
+        for key in ("run_dir", "original_run_dir"):
+            run_dir = cfg_data.get(key)
+            if run_dir:
+                result = _find_latest_checkpoint(run_dir)
+                if result[0]:
+                    return result
+    except Exception:
+        pass
+    return None, None
+
+
+def _find_latest_checkpoint(run_dir: str) -> tuple[Optional[str], Optional[str]]:
+    """Find the latest checkpoint in a run dir.
+
+    Prefers the latest epoch checkpoint (most recent training state).
+    Falls back to best_model.pt if no epoch checkpoints exist.
+    Returns (run_dir, checkpoint_filename) or (None, None) if no checkpoint found.
+    """
+    ckpt_dir = Path(run_dir) / "checkpoints"
+    if not ckpt_dir.exists():
+        return None, None
+
+    # Prefer latest epoch checkpoint (most recent training state)
+    epoch_files = sorted(ckpt_dir.glob("epoch_*.pt"))
+    if epoch_files:
+        return run_dir, epoch_files[-1].name
+
+    # Fall back to best_model.pt
+    if (ckpt_dir / "best_model.pt").exists():
+        return run_dir, "best_model.pt"
+
+    return None, None
+
+
 def _drain(proc: subprocess.Popen, log_buffer: list[str], run_id: str) -> None:
     """Read stdout into log buffer (blocking, run in thread)."""
     try:
         for line in proc.stdout:
-            log_buffer.append(line.rstrip())
+            stripped = line.rstrip()
+            log_buffer.append(stripped)
+            # Capture run directory for resume support
+            if run_id != "__main__":
+                m = _RUN_DIR_RE.search(stripped)
+                if m:
+                    new_dir = m.group(1)
+                    # Preserve original_run_dir for checkpoint chain
+                    try:
+                        with open(get_config_path(run_id)) as f:
+                            cfg = json.load(f)
+                        if not cfg.get("original_run_dir"):
+                            set_config_field(run_id, "original_run_dir", new_dir)
+                    except Exception:
+                        set_config_field(run_id, "original_run_dir", new_dir)
+                    set_config_field(run_id, "run_dir", new_dir)
     except Exception as e:
         print(f"Error reading process output ({run_id}): {e}")
     finally:
@@ -55,6 +120,8 @@ def _drain(proc: subprocess.Popen, log_buffer: list[str], run_id: str) -> None:
             entry = _processes.get(run_id)
             if entry:
                 entry["finished_at"] = time.time()
+        if run_id != "__main__":
+            set_config_status(run_id, "done" if proc.returncode == 0 else "idle")
 
 
 @router.post("/api/launch")
@@ -69,10 +136,21 @@ async def launch_training(req: LaunchRequest):
 
     log_buffer: list[str] = []
 
+    # Append --run_id so W&B reuses the same run on re-launch
+    extra_args = []
+    if req.run_id != "__main__":
+        extra_args = ["--run_id", req.run_id]
+
+        # Auto-resume from last checkpoint if available
+        resume_dir, ckpt_name = _find_resume_checkpoint(req.run_id)
+        if resume_dir:
+            extra_args += ["--resume", resume_dir, "--checkpoint", ckpt_name]
+
     try:
         proc = subprocess.Popen(
             ["python3", "-u", "-m", "src.run"]
-            + shlex.split(req.command.replace("python3 -m src.run ", "")),
+            + shlex.split(req.command.replace("python3 -m src.run ", ""))
+            + extra_args,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -91,6 +169,8 @@ async def launch_training(req: LaunchRequest):
         )
         drain_thread.start()
 
+        if req.run_id != "__main__":
+            set_config_status(req.run_id, "running")
         return {"status": "launched", "run_id": req.run_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -155,6 +235,9 @@ async def launch_stop(req: StopRequest = None):
             entry["proc"].kill()
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
+    if run_id != "__main__":
+        set_config_status(run_id, "idle")
 
     return {"status": "stopped"}
 

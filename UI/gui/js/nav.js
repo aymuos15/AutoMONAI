@@ -19,11 +19,6 @@ function switchPage(pageName) {
 	});
 	if (navTab) navTab.classList.add("active");
 
-	// Load results if switching to results page
-	if (pageName === "results") {
-		loadResults();
-	}
-
 	// Load configs and sync command if switching to configs page
 	if (pageName === "configs") {
 		loadConfigs();

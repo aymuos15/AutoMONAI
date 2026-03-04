@@ -1,9 +1,0 @@
-{
-  "name": "config_2026-03-02T10-51-46",
-  "command": "python3 -m src.run \\\n  --dataset Dataset001_Cellpose \\\n  --model unet \\\n  --train_dataset_class Dataset \\\n  --inference_dataset_class Dataset \\\n  --epochs 1 \\\n  --batch_size 4 \\\n  --lr 0.0001 \\\n  --img_size 128 \\\n  --num_workers 0 \\\n  --output_dir ./predictions \\\n  --device cuda \\\n  --metrics dice \\\n  --loss dice \\\n  --norm none \\\n  --crop none \\\n  --augment false \\\n  --optimizer adam \\\n  --mixed_precision no \\\n  --scheduler none \\\n  --early_stopping false",
-  "params": {
-    "model": "unet",
-    "dataset": "Dataset001_Cellpose",
-    "epochs": "1"
-  }
-}

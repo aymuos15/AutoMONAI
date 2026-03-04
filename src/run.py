@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import torch
+import wandb
 from monai.data import DataLoader
 from lightning.fabric import Fabric
 
@@ -63,14 +64,20 @@ def main():
         print(f"\n=== Resuming training from: {resume_from} ===")
         print(f"Using checkpoint: {resume_checkpoint}")
 
-        loaded_config = RunLogger.load_run_config(resume_from)
         checkpoint_path = RunLogger.get_checkpoint_path(resume_from, resume_checkpoint)
         checkpoint_data = RunLogger.load_checkpoint(str(checkpoint_path))
 
         start_epoch = checkpoint_data["epoch"]
         print(f"Resuming from epoch: {start_epoch}")
 
-        dataset_name = loaded_config["dataset"]
+        # Load config from previous run if available, otherwise use CLI args
+        try:
+            loaded_config = RunLogger.load_run_config(resume_from)
+            dataset_name = loaded_config["dataset"]
+        except FileNotFoundError:
+            print("No config.json in run directory, using CLI args")
+            loaded_config = None
+            dataset_name = args.dataset
     else:
         dataset_name = args.dataset
     dataset_info = DATASETS[dataset_name]
@@ -84,7 +91,7 @@ def main():
     in_channels = len(dataset_info["channels"])
     out_channels = len(dataset_info["labels"])
 
-    if resume_from:
+    if loaded_config:
         model_name = loaded_config["model"]
         train_dataset_class = loaded_config.get("train_dataset_class", "Dataset")
         inference_dataset_class = loaded_config.get("inference_dataset_class", "Dataset")
@@ -135,8 +142,8 @@ def main():
     # Initialize run logger
     logger = RunLogger(dataset_name, model_name, resume_from=resume_from)
 
-    # Save configuration
-    if resume_from:
+    # Build configuration
+    if loaded_config:
         config = loaded_config.copy()
         config["epochs"] = args.epochs
         config["learning_rate"] = args.lr
@@ -186,7 +193,21 @@ def main():
             "early_stopping_enabled": args.early_stopping,
             "patience": args.patience,
         }
+    if resume_from:
+        config["resume_from"] = resume_from
+        config["resume_checkpoint"] = resume_checkpoint
+        config["start_epoch"] = start_epoch
+
+    # Save config to run directory for future resume
     logger.save_config(config)
+    wandb_kwargs = {"project": "AutoMONAI", "config": config}
+    if args.run_id:
+        wandb_kwargs["id"] = args.run_id
+        wandb_kwargs["resume"] = "allow"
+        wandb_kwargs["name"] = args.run_id
+    else:
+        wandb_kwargs["name"] = f"{dataset_name}_{model_name}"
+    wandb.init(**wandb_kwargs)
 
     # Initialize Fabric for device and distributed training management
     _precision_map = {"fp16": "16-mixed", "bf16": "bf16-mixed"}
@@ -282,13 +303,14 @@ def main():
     no_improve_count = 0
 
     total_epochs = config["epochs"]
+    remaining_epochs = max(0, total_epochs - start_epoch)
     if resume_from:
-        print(f"\nResuming training from epoch {start_epoch}, for {total_epochs} total epochs...")
+        print(f"\nResuming training from epoch {start_epoch}/{total_epochs} ({remaining_epochs} epochs remaining)...")
     else:
         print(f"\nTraining for {total_epochs} epoch(s)...")
 
     best_loss = float("inf")
-    for epoch in range(total_epochs):
+    for epoch in range(remaining_epochs):
         current_epoch = start_epoch + epoch + 1
         result = train_one_epoch(fabric, model, train_loader, loss_fn, optimizer, config["metrics"])
         loss = result["loss"]
@@ -299,13 +321,13 @@ def main():
         if "iou" in result:
             epoch_metrics["iou"] = result["iou"]
 
-        logger.log_epoch(epoch, epoch_metrics)
+        wandb.log({"epoch": current_epoch, **epoch_metrics})
 
         is_best = loss < best_loss
         if is_best:
             best_loss = loss
 
-        logger.save_checkpoint(model, epoch, optimizer, is_best=is_best)
+        logger.save_checkpoint(model, current_epoch - 1, optimizer, is_best=is_best)
 
         if scheduler is not None:
             if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
@@ -331,18 +353,7 @@ def main():
             log_msg += f" - IoU: {result['iou']:.4f}"
         print(log_msg)
 
-    final_epoch = start_epoch + total_epochs
-    summary = {
-        "total_epochs": final_epoch,
-        "epochs_trained": total_epochs,
-        "best_loss": best_loss,
-        "final_metrics": epoch_metrics,
-        "dataset": dataset_name,
-        "model": model_name,
-    }
-    if resume_from:
-        summary["resumed_from"] = resume_from
-    logger.save_final_summary(summary)
+    wandb.finish()
 
     if args.save_predictions:
         save_dir = Path(args.output_dir) / dataset_name / model_name
@@ -350,8 +361,7 @@ def main():
         print(f"Saving predictions to: {save_dir}")
         infer(fabric, model, test_loader, str(save_dir), spatial_dims)
 
-    print(f"\nTraining results saved to: {logger.run_dir}")
-    logger.close()
+    print(f"\nCheckpoints saved to: {logger.run_dir}")
     print("Done!")
 
 
