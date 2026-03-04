@@ -465,34 +465,6 @@
 
         <div id="configs-page" class="page">
             <div id="configs-list"></div>
-
-            <div class="launch-bar">
-                <!-- Config on one line -->
-                <div class="launch-config-line">
-                    <button type="button" class="cmd-link" onclick="switchPage('generate')">&larr; Generate</button>
-                    <span class="config-text">
-                        <span id="config-dataset">-</span> _ <span id="config-model">-</span> _ <span id="config-epochs">-</span>
-                    </span>
-                    <button type="button" class="cmd-link" onclick="toggleCommandPreview()">Full</button>
-                    <button id="launch-btn" type="button" class="cmd-link launch-link" onclick="launchTraining()">Launch</button>
-                    <button id="stop-btn" type="button" class="cmd-link launch-link" onclick="stopTraining()" style="display:none">Stop</button>
-                </div>
-
-                <!-- Progress bar -->
-                <div class="launch-progress-container">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="launch-progress-fill"></div>
-                        <div class="progress-text" id="launch-progress-text">0%</div>
-                    </div>
-                    <span class="progress-number" id="launch-progress-number">0%</span>
-                    <button type="button" class="cmd-link" onclick="switchPage('results')">View</button>
-                </div>
-
-                <div class="output full-width" id="launch-command-preview" style="display:none; margin-top:12px;"></div>
-            </div>
-
-            <!-- Logs are collected internally but not displayed yet -->
-            <div id="launch-terminal" style="display:none;"></div>
         </div>
 
         <div id="results-page" class="page">
