@@ -501,7 +501,7 @@ function showNotification(message) {
 }
 
 async function syncWandb() {
-	const btn = document.querySelector('.configs-actions .btn');
+	const btn = document.querySelector('#configs-page .sub-tab');
 	if (btn) {
 		btn.disabled = true;
 		btn.textContent = 'Syncing...';
