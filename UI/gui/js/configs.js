@@ -99,62 +99,11 @@ async function loadConfigs() {
 }
 
 function renderConfigs(configs) {
+	// Hide configs list - only show current launch UI
 	const container = document.getElementById("configs-list");
-
-	if (configs.length === 0) {
-		container.innerHTML =
-			'<div class="configs-empty">No configs yet. Click "Generate Config" to create one.</div>';
-		return;
-	}
-
-	container.innerHTML = configs.map((config, index) => `
-		<div class="config-item">
-			<div class="launch-bar config-launch-bar">
-				<!-- Config on one line -->
-				<div class="launch-config-line">
-					<span class="config-text">${config.name}</span>
-					<button type="button" class="cmd-link" onclick="toggleConfigCommandPreview('${index}')">Full</button>
-					<button type="button" class="cmd-link launch-link" onclick="launchConfigTraining('${config.name}')">Launch</button>
-					<button type="button" class="cmd-link delete-link" onclick="deleteConfig('${config.name}')">Delete</button>
-				</div>
-
-				<!-- Progress bar -->
-				<div class="launch-progress-container">
-					<div class="progress-bar">
-						<div class="progress-fill config-progress-fill-${index}"></div>
-						<div class="progress-text config-progress-text-${index}">0%</div>
-					</div>
-					<span class="progress-number config-progress-number-${index}">0%</span>
-					<button type="button" class="cmd-link" onclick="switchPage('results')">View</button>
-				</div>
-
-				<div class="output full-width config-command-preview-${index}" style="display:none; margin-top:12px;"></div>
-			</div>
-		</div>
-	`).join("");
+	container.innerHTML = "";
 }
 
-function toggleConfigCommandPreview(index) {
-	const preview = document.querySelector(`.config-command-preview-${index}`);
-	if (preview) {
-		preview.style.display = preview.style.display === 'none' ? 'block' : 'none';
-		if (preview.style.display === 'block' && !preview.innerHTML) {
-			// Get config from the rendered list and show its command
-			const configs = document.querySelectorAll('.config-item');
-			if (configs[index]) {
-				const configName = configs[index].querySelector('.config-text').textContent;
-				// Fetch config data if needed
-				const encodedName = encodeURIComponent(configName);
-				fetch(`/api/configs/get/${encodedName}`)
-					.then(r => r.json())
-					.then(config => {
-						preview.textContent = config.command;
-					})
-					.catch(err => console.error("Error loading config preview:", err));
-			}
-		}
-	}
-}
 
 async function loadConfig(configName) {
 	try {
@@ -261,38 +210,12 @@ function showNotification(message) {
 	console.log(message);
 }
 
-async function launchConfigTraining(configName) {
-	try {
-		const encodedName = encodeURIComponent(configName);
-		const response = await fetch(`/api/configs/get/${encodedName}`);
-		if (!response.ok) throw new Error("Failed to load config");
-
-		const config = await response.json();
-
-		// Set the command display and prepare for launch
-		const commandDisplay = document.getElementById("command-display");
-		if (commandDisplay) {
-			commandDisplay.innerText = config.command;
-		}
-
-		// Sync the launch command (update config line and progress bar)
-		if (window.syncLaunchCommand) {
-			syncLaunchCommand();
-		}
-
-		// Launch training immediately
-		if (window.launchTraining) {
-			setTimeout(() => launchTraining(), 100);
-		}
-
-		showNotification(`Launching config: ${configName}`);
-	} catch (error) {
-		alert("Error launching config: " + error.message);
-	}
-}
 
 // Load configs when configs page is viewed
 document.addEventListener("DOMContentLoaded", function() {
 	// Load configs on page initialization
 	loadConfigs();
 });
+
+// Explicit exports for config management.
+window.deleteConfig = deleteConfig;
