@@ -30,7 +30,7 @@ body {
 	color: var(--fg);
 	min-height: 100vh;
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: center;
 	padding: 60px 20px 60px;
 	line-height: 1.5;
