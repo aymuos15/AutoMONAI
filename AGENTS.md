@@ -11,6 +11,7 @@ It exposes two interfaces: a core Python CLI (`src/run.py`) and a web GUI (`UI/g
 (`UI/server.py`, port 8888) bridges the GUI to the core library.
 
 Languages: **Python** (core library, FastAPI server, tests), **HTML/CSS/JS** (web GUI).
+Training metrics are logged to **Weights & Biases** (project name: `AutoMONAI`).
 
 ---
 
@@ -26,6 +27,7 @@ UI/
     config.py   GET /api/models, /api/datasets
     launch.py   POST /api/launch, GET /api/launch/{status,logs,list}, POST /api/launch/stop
     results.py  GET /api/results, DELETE /api/results/{dataset}/{model}/{timestamp}
+    configs.py  GET/POST/DELETE /api/configs, POST /api/configs/sync-wandb
   cli/          CLI entry points (gui.py)
   gui/          Web interface (vanilla HTML/CSS/JS, no build step)
     index.html  HTML structure
@@ -185,7 +187,7 @@ class TestFoo:
 **JavaScript modules** (`UI/gui/js/`):
 - `api.js` — data loading (datasets, models, classes)
 - `command.js` — command building & formatting (main bulk)
-- `configs.js` — config card rendering, per-card launch/stop/progress, SSE log streams
+- `configs.js` — config card rendering, per-card launch/stop/progress, SSE log streams, W&B sync
 - `ui-actions.js` — copy to clipboard, modal open/close
 - `theme.js` — dark/light theme toggle
 - `nav.js` — page & sub-tab navigation

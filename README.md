@@ -35,6 +35,7 @@ The server runs on `http://localhost:8888` with API docs at `/docs`.
 - **Per-card log streaming** via Server-Sent Events (SSE) with expandable terminal view
 - **Auto-reattach** running processes on page reload
 - **Stop training** with graceful shutdown (terminate → kill fallback)
+- **Sync W&B** — synchronize local configs with Weights & Biases (deletes orphaned runs, updates metadata)
 
 ### Results Tab
 - **Run history** with filtering by dataset/model/timestamp
@@ -43,8 +44,13 @@ The server runs on `http://localhost:8888` with API docs at `/docs`.
 - **Run deletion** to clean up old training results
 - **Incremental chart updates** for in-progress runs
 
+### Weights & Biases
+- **Automatic logging** to W&B project `AutoMONAI` during training (loss, Dice, IoU per epoch)
+- **Run resume** support via `--run_id` for interrupted training sessions
+- **Sync button** in Configs tab cleans up orphaned W&B runs and updates run metadata
+
 ### Additional
-- **Keyboard shortcuts**: `Ctrl+Shift+K` (tab search), `Alt+C` (command modal), `Ctrl+Shift+C` (copy)
+- **Keyboard shortcuts**: `Ctrl+Shift+H` to view all shortcuts
 - **Dark/Light theme** with localStorage persistence
 - **Responsive design** for desktop browsing
 

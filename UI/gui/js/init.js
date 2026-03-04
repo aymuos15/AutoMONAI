@@ -16,6 +16,12 @@ document.addEventListener("keydown", (e) => {
 		}
 	}
 
+	if (e.ctrlKey && e.shiftKey && e.key === "H") {
+		e.preventDefault();
+		const modal = document.getElementById("shortcuts-modal");
+		modal.classList.toggle("active");
+	}
+
 	if (e.altKey && e.key.toLowerCase() === "c") {
 		e.preventDefault();
 		const modal = document.getElementById("command-modal");
@@ -75,12 +81,21 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
+	document.getElementById("shortcuts-modal").addEventListener("click", (e) => {
+		if (e.target.id === "shortcuts-modal") {
+			e.target.classList.remove("active");
+		}
+	});
+
 	// Add Esc key handling for closing modals
 	document.addEventListener("keydown", (e) => {
 		if (e.key === "Escape") {
+			const shortcutsModal = document.getElementById("shortcuts-modal");
 			const cmdModal = document.getElementById("command-modal");
 			const searchModal = document.getElementById("tab-search-modal");
-			if (cmdModal && cmdModal.classList.contains("active")) {
+			if (shortcutsModal && shortcutsModal.classList.contains("active")) {
+				shortcutsModal.classList.remove("active");
+			} else if (cmdModal && cmdModal.classList.contains("active")) {
 				closeCommandModal();
 			} else if (searchModal && searchModal.classList.contains("active")) {
 				closeTabSearch();
