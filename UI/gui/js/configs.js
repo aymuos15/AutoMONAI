@@ -163,7 +163,7 @@ function renderConfigs(configs, activeRuns = {}) {
 		return `<div class="launch-bar config-card" id="card-${name}">
 			<div class="launch-config-line">
 				<span class="config-text">${escapeHtml(summary)}</span>
-				<span class="card-actions"><button type="button" class="cmd-link card-full-btn" onclick="cardToggleFull('${name}')">Config</button><button type="button" class="cmd-link delete-link" onclick="deleteConfig('${name}')">Delete</button></span>
+				<span class="card-actions"><button type="button" class="cmd-link card-full-btn" onclick="cardToggleConfig('${name}')">Config</button><button type="button" class="cmd-link delete-link" onclick="deleteConfig('${name}')">Delete</button></span>
 			</div>
 			<div class="launch-progress-container">
 				<span class="card-spinner" ${isRunning ? '' : 'style="display:none"'}></span>
@@ -175,7 +175,6 @@ function renderConfigs(configs, activeRuns = {}) {
 				<button type="button" class="cmd-link launch-link card-stop-btn" onclick="cardStop('${name}')" ${hideStop ? 'style="display:none"' : ""}>Stop</button>
 			</div>
 			<div class="output full-width card-command-preview" style="display:none; margin-top:12px;">${escapeHtml(config.command)}</div>
-			<div class="card-terminal" style="display:none; max-height:200px; overflow-y:auto; font-family:var(--font-mono); font-size:0.7rem; background:var(--bg); padding:8px; border:1px solid var(--border); margin-top:8px;"></div>
 		</div>`;
 	}).join("");
 
@@ -208,16 +207,14 @@ function escapeHtml(str) {
 	return div.innerHTML;
 }
 
-function cardToggleFull(name) {
+function cardToggleConfig(name) {
 	const card = document.getElementById(`card-${name}`);
 	if (!card) return;
 	const preview = card.querySelector(".card-command-preview");
-	const terminal = card.querySelector(".card-terminal");
 	const btn = card.querySelector(".card-full-btn");
 
 	const showing = preview.style.display !== "none";
 	preview.style.display = showing ? "none" : "block";
-	terminal.style.display = showing ? "none" : "block";
 	btn.textContent = showing ? "Config" : "Hide";
 }
 
@@ -258,7 +255,6 @@ async function cardLaunch(name) {
 		const prev = _cardState.get(name);
 		_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: prev?.currentEpoch || 0, running: true });
 		_cardSetRunningUI(name, true);
-		_cardClearTerminal(name);
 		_cardUpdateProgress(name);
 		_cardStartLogStream(name);
 	} catch (e) {
@@ -301,17 +297,10 @@ function _cardSetRunningUI(name, running, done = false) {
 	}
 }
 
-function _cardClearTerminal(name) {
-	const card = document.getElementById(`card-${name}`);
-	if (!card) return;
-	card.querySelector(".card-terminal").innerHTML = "";
-}
-
 function _cardStartLogStream(name) {
 	const state = _cardState.get(name);
 	if (!state) return;
 
-	// Close existing stream
 	if (state.eventSource) {
 		state.eventSource.close();
 	}
@@ -319,7 +308,20 @@ function _cardStartLogStream(name) {
 	const es = new EventSource(`/api/launch/logs?run_id=${encodeURIComponent(name)}`);
 	state.eventSource = es;
 
-	es.onmessage = (e) => _cardAppendLog(name, e.data);
+	es.onmessage = (e) => {
+		const line = e.data;
+		const resumeMatch = line.match(/Resuming training from epoch (\d+)\/(\d+)/);
+		if (resumeMatch) {
+			state.currentEpoch = parseInt(resumeMatch[1]);
+			state.totalEpochs = parseInt(resumeMatch[2]);
+		}
+		const epochMatch = line.match(/Epoch\s+(\d+)\/(\d+)/);
+		if (epochMatch) {
+			state.currentEpoch = parseInt(epochMatch[1]);
+			state.totalEpochs = parseInt(epochMatch[2]);
+		}
+		_cardUpdateProgress(name);
+	};
 
 	es.addEventListener("done", () => {
 		es.close();
@@ -327,11 +329,9 @@ function _cardStartLogStream(name) {
 		state.running = false;
 
 		if (state.stopped) {
-			// User stopped — allow re-launch
 			state.stopped = false;
 			_cardSetRunningUI(name, false);
 		} else {
-			// Natural completion — block re-launch
 			state.done = true;
 			_cardSetRunningUI(name, false, true);
 			_cardSetProgress(name, 100);
@@ -343,36 +343,6 @@ function _cardStartLogStream(name) {
 		state.eventSource = null;
 		state.running = false;
 	};
-}
-
-function _cardAppendLog(name, line) {
-	const card = document.getElementById(`card-${name}`);
-	if (!card) return;
-
-	const terminal = card.querySelector(".card-terminal");
-	const div = document.createElement("div");
-	div.className = "log-line";
-	div.textContent = line;
-	terminal.appendChild(div);
-	terminal.scrollTop = terminal.scrollHeight;
-
-	const state = _cardState.get(name);
-	if (!state) return;
-
-	// Pick up resume starting point
-	const resumeMatch = line.match(/Resuming training from epoch (\d+)\/(\d+)/);
-	if (resumeMatch) {
-		state.currentEpoch = parseInt(resumeMatch[1]);
-		state.totalEpochs = parseInt(resumeMatch[2]);
-	}
-
-	const epochMatch = line.match(/Epoch\s+(\d+)\/(\d+)/);
-	if (epochMatch) {
-		state.currentEpoch = parseInt(epochMatch[1]);
-		state.totalEpochs = parseInt(epochMatch[2]);
-	}
-
-	_cardUpdateProgress(name);
 }
 
 function _cardUpdateProgress(name) {
@@ -556,5 +526,5 @@ document.addEventListener("DOMContentLoaded", function() {
 window.deleteConfig = deleteConfig;
 window.cardLaunch = cardLaunch;
 window.cardStop = cardStop;
-window.cardToggleFull = cardToggleFull;
+window.cardToggleConfig = cardToggleConfig;
 window.loadConfig = loadConfig;

@@ -19,11 +19,7 @@
 	padding: 8px 12px;
 }
 
-.config-card .card-terminal .log-line {
-	font-size: 0.65rem;
-	line-height: 1.4;
-	color: var(--fg-dim);
-}
+
 
 .card-spinner {
 	width: 14px;

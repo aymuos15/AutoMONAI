@@ -81,3 +81,7 @@ dmypy.json
 # ty
 .ty_cache/
 results/
+
+# Runtime data
+UI/configs/
+wandb/
