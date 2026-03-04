@@ -13,8 +13,9 @@ function switchPage(pageName) {
 
 	// Find and activate the corresponding nav tab
 	const navTab = Array.from(tabs).find((tab) => {
-		const pageName2 = tab.onclick.toString().match(/switchPage\('(\w+)'\)/)[1];
-		return pageName2 === pageName;
+		if (!tab.onclick) return false;
+		const match = tab.onclick.toString().match(/switchPage\('(\w+)'\)/);
+		return match && match[1] === pageName;
 	});
 	if (navTab) navTab.classList.add("active");
 
