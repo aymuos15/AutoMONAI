@@ -152,6 +152,7 @@ function renderConfigs(configs, activeRuns = {}) {
 				<span class="card-actions"><button type="button" class="cmd-link card-full-btn" onclick="cardToggleFull('${name}')">Config</button><button type="button" class="cmd-link delete-link" onclick="deleteConfig('${name}')">Delete</button></span>
 			</div>
 			<div class="launch-progress-container">
+				<span class="card-spinner" ${isRunning ? '' : 'style="display:none"'}></span>
 				<div class="progress-bar">
 					<div class="progress-fill card-progress-fill" style="width:${pct}%"></div>
 					<div class="progress-text card-progress-text">${pct > 0 ? escapeHtml(name) + " \u00b7 " + pct + "%" : escapeHtml(name)}</div>
@@ -270,9 +271,11 @@ function _cardSetRunningUI(name, running, done = false) {
 
 	const launchBtn = card.querySelector(".card-launch-btn");
 	const stopBtn = card.querySelector(".card-stop-btn");
+	const spinner = card.querySelector(".card-spinner");
+
+	if (spinner) spinner.style.display = running && !done ? "" : "none";
 
 	if (done) {
-		// Run completed — hide both buttons
 		launchBtn.style.display = "none";
 		stopBtn.style.display = "none";
 	} else if (running) {
