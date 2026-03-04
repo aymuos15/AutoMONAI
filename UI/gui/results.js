@@ -30,60 +30,63 @@ function filterResults() {
 	displayResultsList(filtered);
 }
 
+function _resultSummary(result) {
+	const parts = [];
+	const cfg = result.config || {};
+	if (cfg.model && cfg.model !== "unet") parts.push(`model: ${cfg.model}`);
+	if (cfg.dataset && cfg.dataset !== "Dataset001_Cellpose") parts.push(`dataset: ${cfg.dataset}`);
+	if (result.epochs && result.epochs !== 1) parts.push(`epochs: ${result.epochs}`);
+	if (cfg.batch_size && cfg.batch_size !== "4" && cfg.batch_size !== 4) parts.push(`batch_size: ${cfg.batch_size}`);
+	if (cfg.optimizer && cfg.optimizer !== "adam") parts.push(`optimizer: ${cfg.optimizer}`);
+	if (cfg.mixed_precision && cfg.mixed_precision !== "no") parts.push(`mixed_precision: ${cfg.mixed_precision}`);
+	if (cfg.loss && cfg.loss !== "dice") parts.push(`loss: ${cfg.loss}`);
+	return parts.length === 0 ? "base" : parts.join(" \u00b7 ");
+}
+
+function _escapeHtml(str) {
+	const div = document.createElement("div");
+	div.textContent = str;
+	return div.innerHTML;
+}
+
 function displayResultsList(results) {
 	const list = document.getElementById("results-list");
-	list.innerHTML = "";
 
 	if (!results || results.length === 0) {
 		list.innerHTML = '<div class="results-empty">No results found</div>';
 		return;
 	}
 
-	results.forEach((result) => {
-		const item = document.createElement("div");
-		item.className = "results-item";
-		const statusBadge =
-			result.status === "complete"
-				? '<span class="results-status results-status-complete">✓ Complete</span>'
-				: '<span class="results-status results-status-progress">⟳ In Progress</span>';
-		item.innerHTML = `
-			<div class="results-item-content">
-				<div class="results-item-header">
-					<span class="results-item-title">${result.dataset} / ${result.model}</span>
-					${statusBadge}
-					<span class="results-item-date">${formatDate(result.timestamp)}</span>
-				</div>
-				<div class="results-item-stats">
-					<span>${result.epochs} epoch${result.epochs !== 1 ? "s" : ""}</span>
-					<span>loss ${result.best_loss.toFixed(4)}</span>
-				</div>
+	const isComplete = (r) => r.status === "complete";
+
+	list.innerHTML = results.map((result, i) => {
+		const summary = _resultSummary(result);
+		const status = isComplete(result)
+			? '<span class="cmd-link result-status-complete">Complete</span>'
+			: '<span class="cmd-link result-status-progress">In Progress</span>';
+		const stats = `${result.epochs} epoch${result.epochs !== 1 ? "s" : ""} \u00b7 loss ${result.best_loss.toFixed(4)} \u00b7 ${formatDate(result.timestamp)}`;
+		const id = `result-${i}`;
+
+		return `<div class="launch-bar config-card result-card" id="${id}">
+			<div class="launch-config-line">
+				<span class="config-text">${_escapeHtml(summary)}</span>
+				<span class="card-actions">${status}<button type="button" class="cmd-link" onclick="viewResultByIndex(${i})">Charts</button><button type="button" class="cmd-link delete-link" onclick="deleteResultByIndex(${i})">Delete</button></span>
 			</div>
-			<div class="results-item-actions">
-				<button class="results-item-resume" title="Resume this run">↻ Resume</button>
-				<button class="results-item-delete" title="Delete this run">🗑</button>
-			</div>
-		`;
-		item.onclick = (e) => {
-			if (e.target.classList.contains("results-item-resume")) return;
-			viewResult(result);
-		};
-
-		const resumeBtn = item.querySelector(".results-item-resume");
-		resumeBtn.onclick = (e) => {
-			e.stopPropagation();
-			resumeResult(result);
-		};
-
-		// Delete button click handler (stop propagation to prevent opening the result)
-		const deleteBtn = item.querySelector(".results-item-delete");
-		deleteBtn.onclick = (e) => {
-			e.stopPropagation();
-			deleteResult(result);
-		};
-
-		list.appendChild(item);
-	});
+			<div class="result-stats">${_escapeHtml(stats)}</div>
+		</div>`;
+	}).join("");
 }
+
+function viewResultByIndex(i) {
+	if (allResults[i]) viewResult(allResults[i]);
+}
+
+function deleteResultByIndex(i) {
+	if (allResults[i]) deleteResult(allResults[i]);
+}
+
+window.viewResultByIndex = viewResultByIndex;
+window.deleteResultByIndex = deleteResultByIndex;
 
 function viewResult(result) {
 	currentResult = result;
@@ -144,11 +147,6 @@ async function deleteCurrentResult() {
 	closeResultsViewer();
 }
 
-function resumeResult(result) {
-	const runPath = `results/${result.dataset}/${result.model}/${result.timestamp}`;
-	localStorage.setItem("resumeFrom", runPath);
-	window.location.href = "/launch.html";
-}
 
 function chartColors() {
 	const isDark = !document.documentElement.getAttribute("data-theme");

@@ -3,6 +3,28 @@
 // Per-card state: configName -> {eventSource, totalEpochs, currentEpoch, running}
 const _cardState = new Map();
 
+const BASE_DEFAULTS = {
+	model: "unet", dataset: "Dataset001_Cellpose",
+	epochs: "1", batch_size: "4", img_size: "128",
+	lr: "0.0001", optimizer: "adam", num_workers: "0",
+	scheduler: "none", patience: "X", device: "cuda",
+	mixed_precision: "no", loss: "dice", metrics: "dice",
+	norm: "none", crop: "none", augment: "false",
+	early_stopping: "false",
+};
+
+function _configDiff(command) {
+	const diffs = [];
+	for (const [key, defaultVal] of Object.entries(BASE_DEFAULTS)) {
+		const re = new RegExp(`--${key}\\s+(\\S+)`);
+		const match = command.match(re);
+		if (match && match[1] !== defaultVal) {
+			diffs.push({ key, value: match[1] });
+		}
+	}
+	return diffs;
+}
+
 async function generateNewConfig() {
 	const cmdDisplay = document.getElementById("command-display");
 	const command = cmdDisplay?.dataset?.raw || cmdDisplay?.innerText;
@@ -99,16 +121,6 @@ async function loadConfigs() {
 	}
 }
 
-function _configSummary(command) {
-	const ds = command.match(/--dataset\s+(\S+)/);
-	const md = command.match(/--model\s+(\S+)/);
-	const ep = command.match(/--epochs\s+(\d+)/);
-
-	const dataset = ds ? ds[1].replace(/^Dataset(\d+).*/, "$1") : "-";
-	const model = md ? md[1] : "-";
-	const epochs = ep ? ep[1] : "-";
-	return { dataset, model, epochs };
-}
 
 function renderConfigs(configs, activeRuns = {}) {
 	const container = document.getElementById("configs-list");
@@ -119,17 +131,16 @@ function renderConfigs(configs, activeRuns = {}) {
 	}
 
 	container.innerHTML = configs.map((config) => {
-		const s = _configSummary(config.command);
+		const diffs = _configDiff(config.command);
+		const summary = diffs.length === 0
+			? "base"
+			: diffs.map(d => `${d.key}: ${d.value}`).join(" · ");
 		const name = config.name;
 		const isRunning = activeRuns[name]?.running === true;
 
 		return `<div class="launch-bar config-card" id="card-${name}">
 			<div class="launch-config-line">
-				<span class="config-text">
-					<span class="card-dataset">${s.dataset}</span> _
-					<span class="card-model">${s.model}</span> _
-					<span class="card-epochs">${s.epochs}</span>
-				</span>
+				<span class="config-text">${escapeHtml(summary)}</span>
 				<span class="card-actions"><button type="button" class="cmd-link card-full-btn" onclick="cardToggleFull('${name}')">Config</button><button type="button" class="cmd-link delete-link" onclick="deleteConfig('${name}')">Delete</button></span>
 			</div>
 			<div class="launch-progress-container">

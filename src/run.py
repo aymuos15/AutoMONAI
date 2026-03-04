@@ -189,7 +189,8 @@ def main():
     logger.save_config(config)
 
     # Initialize Fabric for device and distributed training management
-    precision = args.mixed_precision if args.mixed_precision != "no" else None
+    _precision_map = {"fp16": "16-mixed", "bf16": "bf16-mixed"}
+    precision = _precision_map.get(args.mixed_precision) if args.mixed_precision != "no" else None
     fabric = Fabric(accelerator="auto" if not args.device else args.device, precision=precision)
     fabric.launch()
 
