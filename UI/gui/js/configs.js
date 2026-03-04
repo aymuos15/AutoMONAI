@@ -131,8 +131,6 @@ function renderConfigs(configs, activeRuns = {}) {
 					<span class="card-epochs">${s.epochs}</span>
 				</span>
 				<button type="button" class="cmd-link card-full-btn" onclick="cardToggleFull('${name}')">Full</button>
-				<button type="button" class="cmd-link launch-link card-launch-btn" onclick="cardLaunch('${name}')" ${isRunning ? 'style="display:none"' : ""}>Launch</button>
-				<button type="button" class="cmd-link launch-link card-stop-btn" onclick="cardStop('${name}')" ${isRunning ? "" : 'style="display:none"'}>Stop</button>
 				<button type="button" class="cmd-link delete-link" onclick="deleteConfig('${name}')">Delete</button>
 			</div>
 			<div class="launch-progress-container">
@@ -140,7 +138,8 @@ function renderConfigs(configs, activeRuns = {}) {
 					<div class="progress-fill card-progress-fill"></div>
 					<div class="progress-text card-progress-text">0%</div>
 				</div>
-				<span class="progress-number card-progress-number">0%</span>
+				<button type="button" class="cmd-link launch-link card-launch-btn" onclick="cardLaunch('${name}')" ${isRunning ? 'style="display:none"' : ""}>Launch</button>
+				<button type="button" class="cmd-link launch-link card-stop-btn" onclick="cardStop('${name}')" ${isRunning ? "" : 'style="display:none"'}>Stop</button>
 			</div>
 			<div class="output full-width card-command-preview" style="display:none; margin-top:12px;">${escapeHtml(config.command)}</div>
 			<div class="card-terminal" style="display:none; max-height:200px; overflow-y:auto; font-family:var(--font-mono); font-size:0.7rem; background:var(--bg); padding:8px; border:1px solid var(--border); margin-top:8px;"></div>
@@ -322,11 +321,9 @@ function _cardSetProgress(name, pct) {
 
 	const fill = card.querySelector(".card-progress-fill");
 	const text = card.querySelector(".card-progress-text");
-	const number = card.querySelector(".card-progress-number");
 
 	fill.style.width = pct + "%";
 	text.textContent = pct + "%";
-	number.textContent = pct + "%";
 }
 
 async function loadConfig(configName) {
