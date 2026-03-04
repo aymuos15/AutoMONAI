@@ -55,17 +55,14 @@ def _find_resume_checkpoint(run_id: str) -> tuple[Optional[str], Optional[str]]:
     cfg_path = get_config_path(run_id)
     if not cfg_path.exists():
         return None, None
-    try:
-        with open(cfg_path) as f:
-            cfg_data = json.load(f)
-        for key in ("run_dir", "original_run_dir"):
-            run_dir = cfg_data.get(key)
-            if run_dir:
-                result = _find_latest_checkpoint(run_dir)
-                if result[0]:
-                    return result
-    except Exception:
-        pass
+    with open(cfg_path) as f:
+        cfg_data = json.load(f)
+    for key in ("run_dir", "original_run_dir"):
+        run_dir = cfg_data.get(key)
+        if run_dir:
+            result = _find_latest_checkpoint(run_dir)
+            if result[0]:
+                return result
     return None, None
 
 
@@ -104,12 +101,9 @@ def _drain(proc: subprocess.Popen, log_buffer: list[str], run_id: str) -> None:
                 if m:
                     new_dir = m.group(1)
                     # Preserve original_run_dir for checkpoint chain
-                    try:
-                        with open(get_config_path(run_id)) as f:
-                            cfg = json.load(f)
-                        if not cfg.get("original_run_dir"):
-                            set_config_field(run_id, "original_run_dir", new_dir)
-                    except Exception:
+                    with open(get_config_path(run_id)) as f:
+                        cfg = json.load(f)
+                    if not cfg.get("original_run_dir"):
                         set_config_field(run_id, "original_run_dir", new_dir)
                     set_config_field(run_id, "run_dir", new_dir)
     except Exception as e:
@@ -224,7 +218,7 @@ async def launch_logs(run_id: str = Query("__main__")):
 @router.post("/api/launch/stop")
 async def launch_stop(req: StopRequest = None):
     """Stop a running training."""
-    run_id = req.run_id if req else "__main__"
+    run_id = req.run_id
 
     entry = _get_run(run_id)
     if entry and entry["proc"].poll() is None:
@@ -233,8 +227,6 @@ async def launch_stop(req: StopRequest = None):
             entry["proc"].wait(timeout=5)
         except subprocess.TimeoutExpired:
             entry["proc"].kill()
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
 
     if run_id != "__main__":
         set_config_status(run_id, "idle")

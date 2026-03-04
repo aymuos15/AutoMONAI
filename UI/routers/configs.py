@@ -40,15 +40,12 @@ CONFIGS_DIR.mkdir(exist_ok=True)
 def _reset_stale_running():
     """On startup, reset any configs stuck in 'running' back to 'idle'."""
     for config_file in CONFIGS_DIR.glob("*.json"):
-        try:
-            with open(config_file) as f:
-                data = json.load(f)
-            if data.get("status") == "running":
-                data["status"] = "idle"
-                with open(config_file, "w") as f:
-                    json.dump(data, f, indent=2)
-        except Exception:
-            pass
+        with open(config_file) as f:
+            data = json.load(f)
+        if data.get("status") == "running":
+            data["status"] = "idle"
+            with open(config_file, "w") as f:
+                json.dump(data, f, indent=2)
 
 
 _reset_stale_running()
@@ -91,24 +88,18 @@ def _get_checkpoint_epoch(config_data: dict) -> int:
 @router.post("/api/configs/save")
 async def save_config(config: ConfigRequest):
     """Save a new config."""
-    try:
-        # Ensure configs directory exists
-        CONFIGS_DIR.mkdir(parents=True, exist_ok=True)
+    path = get_config_path(config.name)
 
-        path = get_config_path(config.name)
+    config_data = {
+        "name": config.name,
+        "command": config.command,
+        "params": config.params,
+    }
 
-        config_data = {
-            "name": config.name,
-            "command": config.command,
-            "params": config.params,
-        }
+    with open(path, "w") as f:
+        json.dump(config_data, f, indent=2)
 
-        with open(path, "w") as f:
-            json.dump(config_data, f, indent=2)
-
-        return {"success": True, "name": config.name}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save config: {str(e)}")
+    return {"success": True, "name": config.name}
 
 
 @router.get("/api/configs/list")
@@ -116,17 +107,11 @@ async def list_configs():
     """List all saved configs."""
     configs = []
 
-    if not CONFIGS_DIR.exists():
-        return configs
-
     for config_file in sorted(CONFIGS_DIR.glob("*.json")):
-        try:
-            with open(config_file) as f:
-                config_data = json.load(f)
-                config_data["checkpoint_epoch"] = _get_checkpoint_epoch(config_data)
-                configs.append(config_data)
-        except Exception as e:
-            print(f"Error reading config {config_file}: {e}")
+        with open(config_file) as f:
+            config_data = json.load(f)
+            config_data["checkpoint_epoch"] = _get_checkpoint_epoch(config_data)
+            configs.append(config_data)
 
     return configs
 
@@ -139,12 +124,9 @@ async def get_config(config_name: str):
     if not path.exists():
         raise HTTPException(status_code=404, detail="Config not found")
 
-    try:
-        with open(path) as f:
-            config_data = json.load(f)
-        return config_data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reading config: {e}")
+    with open(path) as f:
+        config_data = json.load(f)
+    return config_data
 
 
 @router.patch("/api/configs/status/{config_name}")
@@ -152,15 +134,12 @@ async def update_config_status(config_name: str, status: str):
     """Update the status field of a config (idle, running, done)."""
     path = get_config_path(config_name)
     if not path.exists():
-        return
-    try:
-        with open(path) as f:
-            config_data = json.load(f)
-        config_data["status"] = status
-        with open(path, "w") as f:
-            json.dump(config_data, f, indent=2)
-    except Exception:
-        pass
+        raise HTTPException(status_code=404, detail=f"Config not found: {config_name}")
+    with open(path) as f:
+        config_data = json.load(f)
+    config_data["status"] = status
+    with open(path, "w") as f:
+        json.dump(config_data, f, indent=2)
 
 
 def set_config_status(config_name: str, status: str):
@@ -173,14 +152,11 @@ def set_config_field(config_name: str, key: str, value):
     path = get_config_path(config_name)
     if not path.exists():
         return
-    try:
-        with open(path) as f:
-            config_data = json.load(f)
-        config_data[key] = value
-        with open(path, "w") as f:
-            json.dump(config_data, f, indent=2)
-    except Exception:
-        pass
+    with open(path) as f:
+        config_data = json.load(f)
+    config_data[key] = value
+    with open(path, "w") as f:
+        json.dump(config_data, f, indent=2)
 
 
 @router.post("/api/configs/sync-wandb")
@@ -197,16 +173,12 @@ async def sync_wandb():
     # Load local config names
     local_names = set()
     local_configs = {}
-    if CONFIGS_DIR.exists():
-        for config_file in CONFIGS_DIR.glob("*.json"):
-            try:
-                with open(config_file) as f:
-                    data = json.load(f)
-                name = data.get("name", config_file.stem)
-                local_names.add(name)
-                local_configs[name] = data
-            except Exception:
-                pass
+    for config_file in CONFIGS_DIR.glob("*.json"):
+        with open(config_file) as f:
+            data = json.load(f)
+        name = data["name"]
+        local_names.add(name)
+        local_configs[name] = data
 
     deleted = []
     updated = []
@@ -257,8 +229,5 @@ async def delete_config(config_name: str):
     if not path.exists():
         raise HTTPException(status_code=404, detail="Config not found")
 
-    try:
-        path.unlink()
-        return {"success": True, "name": config_name}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error deleting config: {e}")
+    path.unlink()
+    return {"success": True, "name": config_name}

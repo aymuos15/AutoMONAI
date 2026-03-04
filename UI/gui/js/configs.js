@@ -45,29 +45,21 @@ async function generateNewConfig() {
 			loadConfigs();
 			return;
 		}
-	} catch (error) {
-		console.error("Error checking for duplicate configs:", error);
-	}
 
-	const params = extractCommandParams(command);
-	const diffs = _configDiff(command);
-	const base = diffs.length === 0
-		? "base"
-		: diffs.map(d => `${d.key}_${d.value}`).join("_");
-	let configName = base;
+		const params = extractCommandParams(command);
+		const diffs = _configDiff(command);
+		const base = diffs.length === 0
+			? "base"
+			: diffs.map(d => `${d.key}_${d.value}`).join("_");
+		let configName = base;
 
-	// Append numeric suffix if name already taken
-	try {
-		const listRes = await fetch("/api/configs/list");
-		const existing = (await listRes.json()).map(c => c.name);
+		// Append numeric suffix if name already taken
+		const existing = configs.map(c => c.name);
 		if (existing.includes(configName)) {
 			let i = 2;
 			while (existing.includes(`${configName}_${i}`)) i++;
 			configName = `${configName}_${i}`;
 		}
-	} catch (_) {}
-
-	try {
 		const response = await fetch("/api/configs/save", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -80,19 +72,12 @@ async function generateNewConfig() {
 
 		if (!response.ok) {
 			const error = await response.json();
-			throw new Error(error.detail || "Failed to save config");
+			throw new Error(error.detail);
 		}
 
-		const commandDisplay = document.getElementById("command-display");
-		if (commandDisplay) {
-			commandDisplay.innerText = command;
-		}
+		document.getElementById("command-display").innerText = command;
 
 		switchPage("configs");
-
-		if (window.syncLaunchCommand) {
-			syncLaunchCommand();
-		}
 
 		showNotification(`Config saved: ${configName}`);
 	} catch (error) {
@@ -121,11 +106,8 @@ async function loadConfigs() {
 		const configs = await response.json();
 
 		// Fetch active runs to re-attach streams
-		let activeRuns = {};
-		try {
-			const runRes = await fetch("/api/launch/list");
-			activeRuns = await runRes.json();
-		} catch (_) {}
+		const runRes = await fetch("/api/launch/list");
+		const activeRuns = await runRes.json();
 
 		renderConfigs(configs, activeRuns);
 	} catch (error) {
@@ -150,11 +132,11 @@ function renderConfigs(configs, activeRuns = {}) {
 			? "base"
 			: diffs.map(d => `${d.key}: ${d.value}`).join(" · ");
 		const name = config.name;
-		const status = config.status || "idle";
+		const status = config.status;
 		const isRunning = status === "running" || activeRuns[name]?.running === true;
 		const isDone = status === "done";
-		const epochs = parseInt(config.command.match(/--epochs\s+(\d+)/)?.[1]) || 1;
-		const ckptEpoch = config.checkpoint_epoch || 0;
+		const epochs = parseInt(config.command.match(/--epochs\s+(\d+)/)?.[1]);
+		const ckptEpoch = config.checkpoint_epoch;
 		const pct = isDone ? 100 : (epochs > 0 ? Math.round((ckptEpoch / epochs) * 100) : 0);
 
 		const hideLaunch = isRunning || isDone;
@@ -181,10 +163,10 @@ function renderConfigs(configs, activeRuns = {}) {
 	// Re-attach SSE streams for running configs, set done/progress state
 	for (const config of configs) {
 		const name = config.name;
-		const status = config.status || "idle";
+		const status = config.status;
 		const isRunning = status === "running" || activeRuns[name]?.running;
-		const epochs = parseInt(config.command.match(/--epochs\s+(\d+)/)?.[1]) || 1;
-		const ckptEpoch = config.checkpoint_epoch || 0;
+		const epochs = parseInt(config.command.match(/--epochs\s+(\d+)/)?.[1]);
+		const ckptEpoch = config.checkpoint_epoch;
 
 		if (isRunning) {
 			_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: ckptEpoch, running: true, done: false });
@@ -242,12 +224,8 @@ async function cardLaunch(name) {
 		});
 
 		if (!res.ok) {
-			let errorMsg = "Failed to launch";
-			try {
-				const data = await res.json();
-				errorMsg = data.detail || errorMsg;
-			} catch (_) {}
-			alert(`Error: ${errorMsg}`);
+			const data = await res.json();
+			alert(`Error: ${data.detail}`);
 			return;
 		}
 
@@ -272,7 +250,9 @@ async function cardStop(name) {
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ run_id: name }),
 		});
-	} catch (_) {}
+	} catch (e) {
+		alert(`Error stopping: ${e.message}`);
+	}
 }
 
 function _cardSetRunningUI(name, running, done = false) {
@@ -364,8 +344,7 @@ function _cardSetProgress(name, pct) {
 	const text = card.querySelector(".card-progress-text");
 
 	fill.style.width = pct + "%";
-	const runName = name || "";
-	text.textContent = pct > 0 ? `${runName} · ${pct}%` : runName;
+	text.textContent = pct > 0 ? `${name} · ${pct}%` : name;
 }
 
 async function loadConfig(configName) {
@@ -409,7 +388,7 @@ async function deleteConfig(configName) {
 
 		if (!response.ok) {
 			const error = await response.json();
-			throw new Error(error.detail || "Failed to delete config");
+			throw new Error(error.detail);
 		}
 
 		await loadConfigs();
@@ -486,16 +465,14 @@ function showNotification(message) {
 
 async function syncWandb() {
 	const btn = document.querySelector('#configs-page .sub-tab');
-	if (btn) {
-		btn.disabled = true;
-		btn.textContent = 'Syncing...';
-	}
+	btn.disabled = true;
+	btn.textContent = 'Syncing...';
 
 	try {
 		const response = await fetch('/api/configs/sync-wandb', { method: 'POST' });
 		if (!response.ok) {
 			const err = await response.json();
-			throw new Error(err.detail || 'Sync failed');
+			throw new Error(err.detail);
 		}
 
 		const result = await response.json();
@@ -508,10 +485,8 @@ async function syncWandb() {
 	} catch (error) {
 		alert('W&B sync error: ' + error.message);
 	} finally {
-		if (btn) {
-			btn.disabled = false;
-			btn.textContent = 'Sync W&B';
-		}
+		btn.disabled = false;
+		btn.textContent = 'Sync W&B';
 	}
 }
 
