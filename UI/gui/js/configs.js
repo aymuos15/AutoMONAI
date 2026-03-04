@@ -50,8 +50,22 @@ async function generateNewConfig() {
 	}
 
 	const params = extractCommandParams(command);
-	const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
-	const configName = `config_${timestamp}`;
+	const diffs = _configDiff(command);
+	const base = diffs.length === 0
+		? "base"
+		: diffs.map(d => `${d.key}_${d.value}`).join("_");
+	let configName = base;
+
+	// Append numeric suffix if name already taken
+	try {
+		const listRes = await fetch("/api/configs/list");
+		const existing = (await listRes.json()).map(c => c.name);
+		if (existing.includes(configName)) {
+			let i = 2;
+			while (existing.includes(`${configName}_${i}`)) i++;
+			configName = `${configName}_${i}`;
+		}
+	} catch (_) {}
 
 	try {
 		const response = await fetch("/api/configs/save", {
