@@ -125,7 +125,6 @@ function renderConfigs(configs, activeRuns = {}) {
 
 		return `<div class="launch-bar config-card" id="card-${name}">
 			<div class="launch-config-line">
-				<button type="button" class="cmd-link" onclick="loadConfig('${name}')">&larr; Load</button>
 				<span class="config-text">
 					<span class="card-dataset">${s.dataset}</span> _
 					<span class="card-model">${s.model}</span> _
