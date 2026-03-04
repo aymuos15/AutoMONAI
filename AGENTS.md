@@ -24,16 +24,16 @@ UI/
   server.py     FastAPI app factory (~51 lines) — mounts routers, serves index.html, /static
   routers/      Modularized API routes
     config.py   GET /api/models, /api/datasets
-    launch.py   POST /api/launch, GET /api/launch/{status,logs}, POST /api/launch/stop
+    launch.py   POST /api/launch, GET /api/launch/{status,logs,list}, POST /api/launch/stop
     results.py  GET /api/results, DELETE /api/results/{dataset}/{model}/{timestamp}
   cli/          CLI entry points (gui.py)
   gui/          Web interface (vanilla HTML/CSS/JS, no build step)
     index.html  HTML structure
     js/         Modularized JavaScript (7 modules)
-      api.js, command.js, ui-actions.js, theme.js, nav.js, search.js, init.js
-    styles/     Modularized CSS (6 modules)
-      base.css, components.css, augmentation.css, modals.css, results.css, launch.css
-    launch.js   Launch page UI (unchanged)
+      api.js, command.js, configs.js, ui-actions.js, theme.js, nav.js, search.js, init.js
+    styles/     Modularized CSS (7 modules)
+      base.css, components.css, augmentation.css, modals.css, results.css, launch.css, configs.css
+    launch.js   Launch page UI — passes run_id "__main__" for single-run launches
     results.js  Results viewer with Chart.js graphs (unchanged)
 results/        Training run outputs (results/dataset/model/timestamp/{config,metrics,summary,checkpoints})
 pyproject.toml  Build config, dependencies, ruff, pytest, coverage settings
@@ -180,18 +180,19 @@ class TestFoo:
 
 ### GUI Module Organization (Feb 27, 2026)
 
-`UI/gui/` is modularized into 7 focused JS files + 6 CSS files:
+`UI/gui/` is modularized into 8 focused JS files + 7 CSS files:
 
 **JavaScript modules** (`UI/gui/js/`):
 - `api.js` — data loading (datasets, models, classes)
 - `command.js` — command building & formatting (main bulk)
+- `configs.js` — config card rendering, per-card launch/stop/progress, SSE log streams
 - `ui-actions.js` — copy to clipboard, modal open/close
 - `theme.js` — dark/light theme toggle
 - `nav.js` — page & sub-tab navigation
 - `search.js` — tab search modal logic
 - `init.js` — global keydown listeners, DOMContentLoaded setup
 
-Load order in `index.html`: `theme` → `ui-actions` → `api` → `command` → `nav` → `search` → `results.js` → `launch.js` → `init.js`
+Load order in `index.html`: `theme` → `ui-actions` → `api` → `command` → `configs` → `nav` → `search` → `results.js` → `launch.js` → `init.js`
 
 **CSS modules** (`UI/gui/styles/`):
 - `base.css` — CSS variables, resets, forms (must load first; defines `--bg`, `--fg`, etc.)
@@ -200,5 +201,6 @@ Load order in `index.html`: `theme` → `ui-actions` → `api` → `command` →
 - `modals.css` — tab search modal, command modal styles
 - `results.css` — results page all styles
 - `launch.css` — launch page all styles
+- `configs.css` — config card spacing and terminal log styling
 
 Load order: `base.css` first (defines vars), then others in any order (no cascade dependencies)

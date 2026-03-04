@@ -28,12 +28,13 @@ The server runs on `http://localhost:8888` with API docs at `/docs`.
 - **Device**: GPU (CUDA/BF16/FP16) or CPU with mixed precision support
 - **2D and 3D** image support with automated scaling via PyTorch Lightning Fabric
 
-### Launch Tab
-- **Live command preview** synced from Generate tab
-- **Real-time training execution** with streamed logs via Server-Sent Events (SSE)
-- **Progress tracking** with status indicator (Idle/Running)
+### Configs Tab
+- **Save and manage** training configurations from the Generate tab
+- **Config cards** with launch-bar UI (summary, progress bar, Launch/Stop buttons)
+- **Concurrent training** — launch multiple configs in parallel, each with independent progress tracking
+- **Per-card log streaming** via Server-Sent Events (SSE) with expandable terminal view
+- **Auto-reattach** running processes on page reload
 - **Stop training** with graceful shutdown (terminate → kill fallback)
-- **Auto-refresh results** every 4 seconds during training
 
 ### Results Tab
 - **Run history** with filtering by dataset/model/timestamp
@@ -68,8 +69,8 @@ uv run pytest src/tests/
 
 See [AGENTS.md](./AGENTS.md) for detailed coding guidelines:
 - **Python style**: Snake case, f-strings, line length 100
-- **JavaScript modules**: 7 focused modules in `UI/gui/js/` (API, command building, UI actions, navigation, search, theme, initialization)
-- **CSS modules**: 6 focused stylesheets in `UI/gui/styles/` (base, components, augmentation, modals, results, launch)
+- **JavaScript modules**: 8 focused modules in `UI/gui/js/` (API, command building, configs, UI actions, navigation, search, theme, initialization)
+- **CSS modules**: 7 focused stylesheets in `UI/gui/styles/` (base, components, augmentation, modals, results, launch, configs)
 
 ## Project Structure
 
@@ -94,12 +95,12 @@ See [AGENTS.md](./AGENTS.md) for detailed coding guidelines:
 │   │   └── gui.py          # Web UI launcher
 │   └── gui/                 # Web UI (HTML, CSS, JS)
 │       ├── index.html      # Main HTML
-│       ├── js/             # Modularized JavaScript (7 modules)
-│       │   ├── api.js, command.js, ui-actions.js
+│       ├── js/             # Modularized JavaScript (8 modules)
+│       │   ├── api.js, command.js, configs.js, ui-actions.js
 │       │   ├── theme.js, nav.js, search.js, init.js
-│       ├── styles/         # Modularized CSS (6 stylesheets)
+│       ├── styles/         # Modularized CSS (7 stylesheets)
 │       │   ├── base.css, components.css, augmentation.css
-│       │   ├── modals.css, results.css, launch.css
+│       │   ├── modals.css, results.css, launch.css, configs.css
 │       ├── launch.js       # Launch tab interactivity
 │       └── results.js      # Results viewer with Chart.js
 ├── results/                 # Training run outputs
