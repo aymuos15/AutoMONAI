@@ -477,11 +477,10 @@
             </div>
 
             <div id="results-viewer" style="display: none;">
-                <div class="results-viewer-header">
-                    <span id="results-title" class="results-title"></span>
-                    <div class="results-header-actions">
-                        <button type="button" class="results-delete" onclick="deleteCurrentResult()" title="Delete this run">🗑</button>
-                        <button type="button" class="results-back" onclick="closeResultsViewer()">&larr; Back</button>
+                <div class="launch-bar config-card">
+                    <div class="launch-config-line">
+                        <span class="config-text" id="results-title"></span>
+                        <span class="card-actions"><button type="button" class="cmd-link" onclick="closeResultsViewer()">Back</button><button type="button" class="cmd-link delete-link" onclick="deleteCurrentResult()">Delete</button></span>
                     </div>
                 </div>
 

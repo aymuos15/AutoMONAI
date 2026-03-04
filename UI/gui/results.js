@@ -94,8 +94,7 @@ function viewResult(result) {
 	document.querySelector(".results-search").style.display = "none";
 	document.getElementById("results-viewer").style.display = "block";
 
-	document.getElementById("results-title").textContent =
-		`${result.dataset} / ${result.model}`;
+	document.getElementById("results-title").textContent = _resultSummary(result);
 
 	drawLossChart(result.metrics);
 	drawMetricsChart(result.metrics);

@@ -63,52 +63,6 @@
 }
 
 /* Viewer */
-.results-viewer-header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 20px;
-}
-
-.results-title {
-	font-family: var(--font-mono);
-	font-size: 0.85rem;
-	font-weight: 500;
-	color: var(--fg);
-}
-
-.results-header-actions {
-	display: flex;
-	gap: 8px;
-	align-items: center;
-}
-
-.results-back,
-.results-delete {
-	background: transparent;
-	border: 1px solid var(--border);
-	color: var(--fg-dim);
-	font-family: var(--font-mono);
-	font-size: 0.7rem;
-	padding: 6px 12px;
-	cursor: pointer;
-	transition: all 0.2s;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-}
-
-.results-back:hover,
-.results-delete:hover {
-	border-color: var(--fg);
-	color: var(--fg);
-}
-
-.results-delete {
-	font-family: inherit;
-	padding: 6px 10px;
-	font-size: 0.9rem;
-}
-
 .results-section {
 	margin-bottom: 20px;
 }
