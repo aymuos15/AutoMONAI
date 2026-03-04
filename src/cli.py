@@ -180,8 +180,10 @@ def get_parser():
     )
     parser.add_argument(
         "--augment",
-        action="store_true",
-        help="Enable data augmentation",
+        type=str,
+        default="false",
+        choices=["true", "false"],
+        help="Enable data augmentation (true/false)",
     )
     parser.add_argument(
         "--aug_prob",
@@ -194,16 +196,16 @@ def get_parser():
         type=str,
         nargs="+",
         default=[],
-        choices=PREPROC_NORM_AVAILABLE,
-        help=f"Normalization methods to apply. Available: {', '.join(PREPROC_NORM_AVAILABLE)}",
+        choices=[*PREPROC_NORM_AVAILABLE, "none"],
+        help=f"Normalization methods to apply. Available: {', '.join(PREPROC_NORM_AVAILABLE)}, none",
     )
     parser.add_argument(
         "--crop",
         type=str,
         nargs="+",
         default=[],
-        choices=PREPROC_CROP_AVAILABLE,
-        help=f"Crop methods to apply. Available: {', '.join(PREPROC_CROP_AVAILABLE)}",
+        choices=[*PREPROC_CROP_AVAILABLE, "none"],
+        help=f"Crop methods to apply. Available: {', '.join(PREPROC_CROP_AVAILABLE)}, none",
     )
     parser.add_argument(
         "--optimizer",
@@ -228,8 +230,10 @@ def get_parser():
     )
     parser.add_argument(
         "--early_stopping",
-        action="store_true",
-        help="Enable early stopping based on validation loss",
+        type=str,
+        default="false",
+        choices=["true", "false"],
+        help="Enable early stopping based on validation loss (true/false)",
     )
     parser.add_argument(
         "--patience",

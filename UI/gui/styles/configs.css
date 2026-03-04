@@ -3,32 +3,22 @@
 #configs-list {
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
-	padding: 16px;
+	gap: 12px;
 }
 
 .configs-empty {
 	text-align: center;
 	padding: 40px 20px;
-	color: var(--color-text-secondary);
+	color: var(--fg-dim);
 	font-size: 14px;
 }
 
-.config-item {
-	border: 1px solid var(--color-border);
-	border-radius: 8px;
-	overflow: hidden;
-	transition: all 0.2s ease;
+.launch-bar.config-card {
+	margin-bottom: 0;
 }
 
-.config-item:hover {
-	border-color: var(--color-accent);
-}
-
-.config-launch-bar {
-	margin: 0;
-	border: none;
-	background: transparent;
-	border-radius: 0;
-	padding: 16px;
+.config-card .card-terminal .log-line {
+	font-size: 0.65rem;
+	line-height: 1.4;
+	color: var(--fg-dim);
 }

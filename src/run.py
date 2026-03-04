@@ -29,6 +29,14 @@ def main():
     parser = get_parser()
     args = parser.parse_args()
 
+    # Convert string booleans to actual bools
+    args.augment = args.augment == "true"
+    args.early_stopping = args.early_stopping == "true"
+
+    # Filter out "none" from list args
+    args.norm = [v for v in args.norm if v != "none"]
+    args.crop = [v for v in args.crop if v != "none"]
+
     if args.show_config:
         print_config()
         sys.exit(0)

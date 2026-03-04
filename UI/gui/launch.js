@@ -4,7 +4,7 @@ let _logCount = 0;
 let _totalEpochs = 1;
 let _currentEpoch = 0;
 
-// Called by switchPage('launch') — sync command preview from Generate tab
+// Called by switchPage('configs') — sync command preview from Generate tab
 function syncLaunchCommand() {
 	const src = document.getElementById("command-display");
 	const dst = document.getElementById("launch-command-preview");
@@ -61,7 +61,8 @@ function toggleCommandPreview() {
 }
 
 async function launchTraining() {
-	let command = document.getElementById("launch-command-preview").dataset.raw;
+	const previewEl = document.getElementById("launch-command-preview");
+	let command = previewEl?.dataset?.raw || previewEl?.textContent || "";
 	if (!command) {
 		alert(
 			"No command to launch. Configure training in the Generate tab first.",
@@ -79,14 +80,14 @@ async function launchTraining() {
 		const res = await fetch("/api/launch", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ command }),
+			body: JSON.stringify({ command, run_id: "__main__" }),
 		});
 
 		if (!res.ok) {
 			let errorMsg = "Failed to launch";
 			try {
 				const data = await res.json();
-				errorMsg = data.error || errorMsg;
+				errorMsg = data.detail || data.error || errorMsg;
 			} catch (e) {
 				// If response is not JSON, use status text
 				errorMsg = res.statusText || errorMsg;
@@ -110,7 +111,11 @@ async function launchTraining() {
 }
 
 async function stopTraining() {
-	await fetch("/api/launch/stop", { method: "POST" });
+	await fetch("/api/launch/stop", {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ run_id: "__main__" }),
+	});
 }
 
 function deleteCurrentConfig() {
@@ -141,7 +146,7 @@ function deleteCurrentConfig() {
 }
 
 function _startLogStream() {
-	_eventSource = new EventSource("/api/launch/logs");
+	_eventSource = new EventSource("/api/launch/logs?run_id=__main__");
 	_eventSource.onmessage = (e) => _appendLog(e.data);
 	_eventSource.addEventListener("done", () => {
 		setRunningUI(false);
@@ -239,3 +244,10 @@ function setRunningUI(running) {
 		progressFill.style.width = "100%";
 	}
 }
+
+// Explicit exports for inline onclick handlers in index.html.
+window.launchTraining = launchTraining;
+window.stopTraining = stopTraining;
+window.toggleCommandPreview = toggleCommandPreview;
+window.deleteCurrentConfig = deleteCurrentConfig;
+window.syncLaunchCommand = syncLaunchCommand;
