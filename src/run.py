@@ -1,10 +1,24 @@
 #!/usr/bin/env python3
 
+import atexit
+import signal
 import sys
 from pathlib import Path
 
 import torch
 import wandb
+
+
+def _cleanup_wandb(*_):
+    """Ensure W&B flushes data on termination."""
+    try:
+        wandb.finish()
+    except Exception:
+        pass
+
+
+atexit.register(_cleanup_wandb)
+signal.signal(signal.SIGTERM, lambda *_: (_cleanup_wandb(), sys.exit(0)))
 from monai.data import DataLoader
 from lightning.fabric import Fabric
 

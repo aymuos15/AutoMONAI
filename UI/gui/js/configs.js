@@ -497,6 +497,39 @@ function showNotification(message) {
 	console.log(message);
 }
 
+async function syncWandb() {
+	const btn = document.querySelector('.configs-actions .btn');
+	if (btn) {
+		btn.disabled = true;
+		btn.textContent = 'Syncing...';
+	}
+
+	try {
+		const response = await fetch('/api/configs/sync-wandb', { method: 'POST' });
+		if (!response.ok) {
+			const err = await response.json();
+			throw new Error(err.detail || 'Sync failed');
+		}
+
+		const result = await response.json();
+		const parts = [];
+		if (result.deleted.length > 0) parts.push(`Deleted ${result.deleted.length} orphaned run(s)`);
+		if (result.updated.length > 0) parts.push(`Updated ${result.updated.length}`);
+		if (parts.length === 0) parts.push('W&B already in sync');
+
+		showNotification(parts.join(', '));
+	} catch (error) {
+		alert('W&B sync error: ' + error.message);
+	} finally {
+		if (btn) {
+			btn.disabled = false;
+			btn.textContent = 'Sync W&B';
+		}
+	}
+}
+
+window.syncWandb = syncWandb;
+
 // Load configs when configs page is viewed
 document.addEventListener("DOMContentLoaded", function() {
 	loadConfigs();

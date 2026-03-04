@@ -6,6 +6,30 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+def _import_wandb():
+    """Import the real wandb package, bypassing the local wandb/ log directory."""
+    import importlib
+    import sys
+    project_root = str(Path(__file__).parent.parent.parent)
+    saved = sys.path[:]
+    try:
+        # Remove project root and '' (cwd) so the local wandb/ dir isn't found
+        sys.path = [p for p in sys.path if p not in (project_root, "", ".")]
+        for key in list(sys.modules):
+            if key == "wandb" or key.startswith("wandb."):
+                del sys.modules[key]
+        mod = importlib.import_module("wandb")
+        if not hasattr(mod, "Api"):
+            raise ImportError
+        return mod
+    except ImportError:
+        return None
+    finally:
+        sys.path = saved
+
+
+wandb = _import_wandb()
+
 router = APIRouter()
 
 # Directory to store saved configs
@@ -157,6 +181,72 @@ def set_config_field(config_name: str, key: str, value):
             json.dump(config_data, f, indent=2)
     except Exception:
         pass
+
+
+@router.post("/api/configs/sync-wandb")
+async def sync_wandb():
+    """Sync W&B runs with local configs: delete orphans, update changed configs."""
+    if wandb is None:
+        raise HTTPException(status_code=500, detail="wandb is not installed")
+
+    try:
+        api = wandb.Api()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to connect to W&B: {e}")
+
+    # Load local config names
+    local_names = set()
+    local_configs = {}
+    if CONFIGS_DIR.exists():
+        for config_file in CONFIGS_DIR.glob("*.json"):
+            try:
+                with open(config_file) as f:
+                    data = json.load(f)
+                name = data.get("name", config_file.stem)
+                local_names.add(name)
+                local_configs[name] = data
+            except Exception:
+                pass
+
+    deleted = []
+    updated = []
+    unchanged = []
+
+    try:
+        runs = api.runs("AutoMONAI")
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to list W&B runs: {e}"
+        )
+
+    for run in runs:
+        run_id = run.id
+        run_name = run.name
+
+        # Match by run name (which equals config name)
+        if run_name not in local_names:
+            try:
+                run.delete()
+                deleted.append(run_name or run_id)
+            except Exception as e:
+                print(f"Failed to delete W&B run {run_id}: {e}")
+        else:
+            # Check if local config changed — update W&B run config
+            local_data = local_configs.get(run_name, {})
+            local_params = local_data.get("params", {})
+            wandb_config = dict(run.config) if run.config else {}
+
+            if local_params and local_params != wandb_config:
+                try:
+                    run.config.update(local_params)
+                    run.update()
+                    updated.append(run_name)
+                except Exception as e:
+                    print(f"Failed to update W&B run {run_id}: {e}")
+            else:
+                unchanged.append(run_name)
+
+    return {"deleted": deleted, "updated": updated, "unchanged": unchanged}
 
 
 @router.delete("/api/configs/delete/{config_name}")
