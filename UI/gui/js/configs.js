@@ -130,8 +130,7 @@ function renderConfigs(configs, activeRuns = {}) {
 					<span class="card-model">${s.model}</span> _
 					<span class="card-epochs">${s.epochs}</span>
 				</span>
-				<button type="button" class="cmd-link card-full-btn" onclick="cardToggleFull('${name}')">Full</button>
-				<button type="button" class="cmd-link delete-link" onclick="deleteConfig('${name}')">Delete</button>
+				<span class="card-actions"><button type="button" class="cmd-link card-full-btn" onclick="cardToggleFull('${name}')">Config</button><button type="button" class="cmd-link delete-link" onclick="deleteConfig('${name}')">Delete</button></span>
 			</div>
 			<div class="launch-progress-container">
 				<div class="progress-bar">
@@ -174,7 +173,7 @@ function cardToggleFull(name) {
 	const showing = preview.style.display !== "none";
 	preview.style.display = showing ? "none" : "block";
 	terminal.style.display = showing ? "none" : "block";
-	btn.textContent = showing ? "Full" : "Hide";
+	btn.textContent = showing ? "Config" : "Hide";
 }
 
 async function cardLaunch(name) {

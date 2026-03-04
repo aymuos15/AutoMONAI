@@ -130,13 +130,24 @@
 	color: #4ade80;
 }
 
+.card-actions {
+	display: flex;
+	gap: 0;
+}
+
+.card-full-btn,
+.delete-link,
+.card-launch-btn,
+.card-stop-btn {
+	padding: 2px 6px;
+	font-size: 0.6rem;
+	font-weight: 600;
+}
+
 .delete-link {
 	background: transparent;
 	border: 1px solid #ef4444;
 	color: #ef4444;
-	padding: 4px 8px;
-	font-size: 0.8rem;
-	font-weight: 600;
 }
 
 .delete-link:hover {
