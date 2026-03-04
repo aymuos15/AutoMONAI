@@ -24,14 +24,10 @@ function switchPage(pageName) {
 		loadResults();
 	}
 
-	// Sync command if switching to launch page
-	if (pageName === "launch") {
-		syncLaunchCommand();
-	}
-
-	// Load configs if switching to configs page
+	// Load configs and sync command if switching to configs page
 	if (pageName === "configs") {
 		loadConfigs();
+		syncLaunchCommand();
 	}
 }
 
