@@ -130,7 +130,7 @@
 	display: flex;
 	gap: 0;
 	margin-bottom: 24px;
-	margin-top: -16px;
+	margin-top: -24px;
 	flex-wrap: nowrap;
 	overflow-x: auto;
 	scrollbar-width: none;
