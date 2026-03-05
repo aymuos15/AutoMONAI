@@ -89,10 +89,20 @@ function updateCommand() {
 	const patience = document.getElementById("patience").value;
 	const early_stopping = patience && patience.toUpperCase() !== "X";
 
+	const inferer = document.getElementById("inferer").value;
+
 	document.getElementById("aug_rotate_prob_val").textContent = aug_rotate_prob;
 	document.getElementById("aug_flip_prob_val").textContent = aug_flip_prob;
 
 	const resumeFrom = document.getElementById("resume_from")?.value;
+
+	// Collect extra transforms
+	const extraTransformCheckboxes = document.querySelectorAll(
+		'input[name="extra_transforms"]:checked',
+	);
+	const extraTransforms = Array.from(extraTransformCheckboxes)
+		.map((cb) => cb.value)
+		.join(" ");
 
 	let command = `python3 -m src.run --dataset ${dataset} --model ${model} --train_dataset_class ${trainDataset} --inference_dataset_class ${inferenceDataset} --epochs ${epochs} --batch_size ${batch_size} --lr ${lr} --img_size ${img_size} --num_workers ${num_workers} --output_dir ${output_dir} --device ${device} --metrics ${metrics} --loss ${loss}`;
 
@@ -122,12 +132,20 @@ function updateCommand() {
 		command += ` --aug_prob ${avgProb}`;
 	}
 
+	if (extraTransforms) {
+		command += ` --extra_transforms ${extraTransforms}`;
+	}
+
 	command += ` --optimizer ${optimizer}`;
 	command += ` --mixed_precision ${mixed_precision}`;
 	command += ` --scheduler ${scheduler}`;
 	command += ` --early_stopping ${early_stopping ? "true" : "false"}`;
 	if (early_stopping) {
 		command += ` --patience ${patience}`;
+	}
+
+	if (inferer !== "simple") {
+		command += ` --inferer ${inferer}`;
 	}
 
 	const formattedHtml = formatCommand(command);
@@ -240,6 +258,9 @@ function handleResumeSelect() {
 	}
 	if (config.early_stopping_enabled) {
 		document.getElementById("patience").value = config.patience || 10;
+	}
+	if (config.inferer) {
+		document.getElementById("inferer").value = config.inferer;
 	}
 
 	updateCommand();
