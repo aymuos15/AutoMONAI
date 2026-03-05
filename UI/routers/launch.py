@@ -92,6 +92,8 @@ def _find_latest_checkpoint(run_dir: str) -> tuple[Optional[str], Optional[str]]
 def _drain(proc: subprocess.Popen, log_buffer: list[str], run_id: str) -> None:
     """Read stdout into log buffer (blocking, run in thread)."""
     try:
+        if proc.stdout is None:
+            return
         for line in proc.stdout:
             stripped = line.rstrip()
             log_buffer.append(stripped)
@@ -184,6 +186,7 @@ async def launch_status(run_id: str = Query("__main__")):
 @router.get("/api/launch/logs")
 async def launch_logs(run_id: str = Query("__main__")):
     """Stream logs via SSE for a specific run."""
+
     async def event_generator():
         tail_index = [0]
 
@@ -216,9 +219,9 @@ async def launch_logs(run_id: str = Query("__main__")):
 
 
 @router.post("/api/launch/stop")
-async def launch_stop(req: StopRequest = None):
+async def launch_stop(req: Optional[StopRequest] = None):
     """Stop a running training."""
-    run_id = req.run_id
+    run_id = req.run_id if req else "__main__"
 
     entry = _get_run(run_id)
     if entry and entry["proc"].poll() is None:

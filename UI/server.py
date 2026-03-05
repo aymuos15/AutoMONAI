@@ -7,11 +7,11 @@ from pathlib import Path
 # Add parent directory to path for imports FIRST (before any UI imports)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI  # noqa: E402
+from fastapi.responses import HTMLResponse  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
 
-from UI.routers import config, launch, configs
+from UI.routers import config, launch, configs  # noqa: E402
 
 app = FastAPI(
     title="MonaiUI",

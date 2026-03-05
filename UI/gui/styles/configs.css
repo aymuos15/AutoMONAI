@@ -19,8 +19,6 @@
 	padding: 8px 12px;
 }
 
-
-
 .card-spinner {
 	width: 14px;
 	height: 14px;
@@ -32,5 +30,7 @@
 }
 
 @keyframes card-spin {
-	to { transform: rotate(360deg); }
+	to {
+		transform: rotate(360deg);
+	}
 }

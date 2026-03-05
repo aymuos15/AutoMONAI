@@ -6,10 +6,12 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+
 def _import_wandb():
     """Import the real wandb package, bypassing the local wandb/ log directory."""
     import importlib
     import sys
+
     project_root = str(Path(__file__).parent.parent.parent)
     saved = sys.path[:]
     try:
@@ -187,9 +189,7 @@ async def sync_wandb():
     try:
         runs = api.runs("AutoMONAI")
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to list W&B runs: {e}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to list W&B runs: {e}")
 
     for run in runs:
         run_id = run.id

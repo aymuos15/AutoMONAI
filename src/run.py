@@ -12,19 +12,19 @@ import wandb
 def _cleanup_wandb(*_):
     """Ensure W&B flushes data on termination."""
     try:
-        wandb.finish()
+        wandb.finish()  # type: ignore[unresolved-attribute]
     except Exception:
         pass
 
 
 atexit.register(_cleanup_wandb)
 signal.signal(signal.SIGTERM, lambda *_: (_cleanup_wandb(), sys.exit(0)))
-from monai.data import DataLoader
-from lightning.fabric import Fabric
+from monai.data import DataLoader  # noqa: E402
+from lightning.fabric import Fabric  # noqa: E402
 
-from .config import DATASETS
-from .cli import get_parser, print_config
-from .dataset import (
+from .config import DATASETS  # noqa: E402
+from .cli import get_parser, print_config  # noqa: E402
+from .dataset import (  # noqa: E402
     get_train_files,
     get_test_files,
     get_test_files_with_labels,
@@ -34,11 +34,11 @@ from .dataset import (
     TestDataset,
     DictTransform,
 )
-from .models import get_model
-from .inference import infer, infer_with_metrics
-from .results import RunLogger
-from .train import train_one_epoch, get_loss
-from .transforms import get_transforms
+from .models import get_model  # noqa: E402
+from .inference import infer, infer_with_metrics  # noqa: E402
+from .results import RunLogger  # noqa: E402
+from .train import train_one_epoch, get_loss  # noqa: E402
+from .transforms import get_transforms  # noqa: E402
 
 
 def main():
@@ -226,12 +226,12 @@ def main():
         wandb_kwargs["name"] = args.run_id
     else:
         wandb_kwargs["name"] = f"{dataset_name}_{model_name}"
-    wandb.init(**wandb_kwargs)
+    wandb.init(**wandb_kwargs)  # type: ignore[unresolved-attribute]
 
     # Initialize Fabric for device and distributed training management
     _precision_map = {"fp16": "16-mixed", "bf16": "bf16-mixed"}
     precision = _precision_map.get(args.mixed_precision) if args.mixed_precision != "no" else None
-    fabric = Fabric(accelerator="auto" if not args.device else args.device, precision=precision)
+    fabric = Fabric(accelerator="auto" if not args.device else args.device, precision=precision)  # type: ignore[invalid-argument-type]
     fabric.launch()
 
     print(f"Using device: {fabric.device}")
@@ -312,7 +312,7 @@ def main():
             print("No labeled test files found (need imagesTs/ + labelsTs/)!")
             sys.exit(1)
 
-        print(f"\n=== Inference mode ===")
+        print("\n=== Inference mode ===")
         print(f"Labeled test files: {len(test_files_labeled)}")
 
         labeled_test_ds = TrainDataset(
@@ -323,24 +323,32 @@ def main():
         )
         labeled_test_loader = fabric.setup_dataloaders(labeled_test_loader)
 
-        save_dir = str(Path(args.output_dir) / dataset_name / model_name) if args.save_predictions else None
+        save_dir = (
+            str(Path(args.output_dir) / dataset_name / model_name)
+            if args.save_predictions
+            else None
+        )
         results = infer_with_metrics(
-            fabric, model, labeled_test_loader,
-            config["metrics"], out_channels,
-            save_dir=save_dir, spatial_dims=spatial_dims,
+            fabric,
+            model,
+            labeled_test_loader,
+            config["metrics"],
+            out_channels,
+            save_dir=save_dir,
+            spatial_dims=spatial_dims,
         )
 
         # Log to W&B chart + summary with infer/ prefix
         wandb_metrics = {f"infer/{k}": v for k, v in results.items()}
-        wandb.log(wandb_metrics)
+        wandb.log(wandb_metrics)  # type: ignore[unresolved-attribute]
         for k, v in wandb_metrics.items():
-            wandb.summary[k] = v
+            wandb.summary[k] = v  # type: ignore[unresolved-attribute]
 
         summary_parts = [f"{k}: {v:.4f}" for k, v in results.items()]
         print(f"\nInference results: {' - '.join(summary_parts)}")
         if save_dir:
             print(f"Predictions saved to: {save_dir}")
-        wandb.finish()
+        wandb.finish()  # type: ignore[unresolved-attribute]
         sys.exit(0)
 
     # Setup learning rate scheduler
@@ -362,7 +370,9 @@ def main():
     total_epochs = config["epochs"]
     remaining_epochs = max(0, total_epochs - start_epoch)
     if resume_from:
-        print(f"\nResuming training from epoch {start_epoch}/{total_epochs} ({remaining_epochs} epochs remaining)...")
+        print(
+            f"\nResuming training from epoch {start_epoch}/{total_epochs} ({remaining_epochs} epochs remaining)..."
+        )
     else:
         print(f"\nTraining for {total_epochs} epoch(s)...")
 
@@ -378,7 +388,7 @@ def main():
         if "iou" in result:
             epoch_metrics["iou"] = result["iou"]
 
-        wandb.log({"epoch": current_epoch, **epoch_metrics})
+        wandb.log({"epoch": current_epoch, **epoch_metrics})  # type: ignore[unresolved-attribute]
 
         is_best = loss < best_loss
         if is_best:
@@ -410,7 +420,7 @@ def main():
             log_msg += f" - IoU: {result['iou']:.4f}"
         print(log_msg)
 
-    wandb.finish()
+    wandb.finish()  # type: ignore[unresolved-attribute]
 
     if args.save_predictions:
         save_dir = Path(args.output_dir) / dataset_name / model_name

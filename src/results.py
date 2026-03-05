@@ -1,5 +1,6 @@
 from pathlib import Path
 from datetime import datetime
+from typing import Optional
 import json
 import torch
 
@@ -12,7 +13,7 @@ class RunLogger:
         dataset_name: str,
         model_name: str,
         results_root: str = "results",
-        resume_from: str = None,
+        resume_from: Optional[str] = None,
     ):
         self.dataset_name = dataset_name
         self.model_name = model_name

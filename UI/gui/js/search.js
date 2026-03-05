@@ -72,10 +72,14 @@ function selectTab(tab) {
 				// Manually activate the sub-page and sub-tab
 				const activePage = document.querySelector(".page.active");
 				const subPages = activePage.querySelectorAll(".sub-page");
-				subPages.forEach((page) => page.classList.remove("active"));
+				subPages.forEach((page) => {
+					page.classList.remove("active");
+				});
 
 				const subTabs = activePage.querySelectorAll(".sub-tab");
-				subTabs.forEach((t) => t.classList.remove("active"));
+				subTabs.forEach((t) => {
+					t.classList.remove("active");
+				});
 
 				activePage.querySelector(`#sub-${tab.id}`).classList.add("active");
 				button.classList.add("active");

@@ -4,12 +4,23 @@
 const _cardState = new Map();
 
 const BASE_DEFAULTS = {
-	model: "unet", dataset: "Dataset001_Cellpose",
-	epochs: "1", batch_size: "4", img_size: "128",
-	lr: "0.0001", optimizer: "adam", num_workers: "0",
-	scheduler: "none", patience: "X", device: "cuda",
-	mixed_precision: "no", loss: "dice", metrics: "dice",
-	norm: "none", crop: "none", augment: "false",
+	model: "unet",
+	dataset: "Dataset001_Cellpose",
+	epochs: "1",
+	batch_size: "4",
+	img_size: "128",
+	lr: "0.0001",
+	optimizer: "adam",
+	num_workers: "0",
+	scheduler: "none",
+	patience: "X",
+	device: "cuda",
+	mixed_precision: "no",
+	loss: "dice",
+	metrics: "dice",
+	norm: "none",
+	crop: "none",
+	augment: "false",
 	early_stopping: "false",
 };
 
@@ -38,7 +49,7 @@ async function generateNewConfig() {
 		const listResponse = await fetch("/api/configs/list");
 		const configs = await listResponse.json();
 
-		const existingConfig = configs.find(cfg => cfg.command === command);
+		const existingConfig = configs.find((cfg) => cfg.command === command);
 		if (existingConfig) {
 			alert(`This config already exists: ${existingConfig.name}`);
 			switchPage("configs");
@@ -48,13 +59,14 @@ async function generateNewConfig() {
 
 		const params = extractCommandParams(command);
 		const diffs = _configDiff(command);
-		const base = diffs.length === 0
-			? "base"
-			: diffs.map(d => `${d.key}_${d.value}`).join("_");
+		const base =
+			diffs.length === 0
+				? "base"
+				: diffs.map((d) => `${d.key}_${d.value}`).join("_");
 		let configName = base;
 
 		// Append numeric suffix if name already taken
-		const existing = configs.map(c => c.name);
+		const existing = configs.map((c) => c.name);
 		if (existing.includes(configName)) {
 			let i = 2;
 			while (existing.includes(`${configName}_${i}`)) i++;
@@ -117,7 +129,6 @@ async function loadConfigs() {
 	}
 }
 
-
 function renderConfigs(configs, activeRuns = {}) {
 	const container = document.getElementById("configs-list");
 
@@ -126,40 +137,48 @@ function renderConfigs(configs, activeRuns = {}) {
 		return;
 	}
 
-	container.innerHTML = configs.map((config) => {
-		const diffs = _configDiff(config.command);
-		const summary = diffs.length === 0
-			? "base"
-			: diffs.map(d => `${d.key}: ${d.value}`).join(" · ");
-		const name = config.name;
-		const status = config.status;
-		const isRunning = status === "running" || activeRuns[name]?.running === true;
-		const isDone = status === "done";
-		const epochs = parseInt(config.command.match(/--epochs\s+(\d+)/)?.[1]);
-		const ckptEpoch = config.checkpoint_epoch;
-		const pct = isDone ? 100 : (epochs > 0 ? Math.round((ckptEpoch / epochs) * 100) : 0);
+	container.innerHTML = configs
+		.map((config) => {
+			const diffs = _configDiff(config.command);
+			const summary =
+				diffs.length === 0
+					? "base"
+					: diffs.map((d) => `${d.key}: ${d.value}`).join(" · ");
+			const name = config.name;
+			const status = config.status;
+			const isRunning =
+				status === "running" || activeRuns[name]?.running === true;
+			const isDone = status === "done";
+			const epochs = parseInt(config.command.match(/--epochs\s+(\d+)/)?.[1]);
+			const ckptEpoch = config.checkpoint_epoch;
+			const pct = isDone
+				? 100
+				: epochs > 0
+					? Math.round((ckptEpoch / epochs) * 100)
+					: 0;
 
-		const hideLaunch = isRunning || isDone;
-		const hideStop = !isRunning;
+			const hideLaunch = isRunning || isDone;
+			const hideStop = !isRunning;
 
-		return `<div class="launch-bar config-card" id="card-${name}">
+			return `<div class="launch-bar config-card" id="card-${name}">
 			<div class="launch-config-line">
 				<span class="config-text">${escapeHtml(summary)}</span>
 				<span class="card-actions"><button type="button" class="cmd-link card-full-btn" onclick="cardToggleConfig('${name}')">Config</button><button type="button" class="cmd-link delete-link" onclick="deleteConfig('${name}')">Delete</button></span>
 			</div>
 			<div class="launch-progress-container">
-				<span class="card-spinner" ${isRunning ? '' : 'style="display:none"'}></span>
+				<span class="card-spinner" ${isRunning ? "" : 'style="display:none"'}></span>
 				<div class="progress-bar">
 					<div class="progress-fill card-progress-fill" style="width:${pct}%"></div>
 					<div class="progress-text card-progress-text">${pct > 0 ? escapeHtml(name) + " \u00b7 " + pct + "%" : escapeHtml(name)}</div>
 				</div>
 				<button type="button" class="cmd-link launch-link card-launch-btn" onclick="cardLaunch('${name}')" ${hideLaunch ? 'style="display:none"' : ""}>Launch</button>
-				<button type="button" class="cmd-link launch-link card-infer-btn" onclick="cardInfer('${name}')" ${isDone ? '' : 'style="display:none"'}>Infer</button>
+				<button type="button" class="cmd-link launch-link card-infer-btn" onclick="cardInfer('${name}')" ${isDone ? "" : 'style="display:none"'}>Infer</button>
 				<button type="button" class="cmd-link launch-link card-stop-btn" onclick="cardStop('${name}')" ${hideStop ? 'style="display:none"' : ""}>Stop</button>
 			</div>
 			<div class="output full-width card-command-preview" style="display:none; margin-top:12px;">${escapeHtml(config.command)}</div>
 		</div>`;
-	}).join("");
+		})
+		.join("");
 
 	// Re-attach SSE streams for running configs, set done/progress state
 	for (const config of configs) {
@@ -170,15 +189,33 @@ function renderConfigs(configs, activeRuns = {}) {
 		const ckptEpoch = config.checkpoint_epoch;
 
 		if (isRunning) {
-			_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: ckptEpoch, running: true, done: false });
+			_cardState.set(name, {
+				eventSource: null,
+				totalEpochs: epochs,
+				currentEpoch: ckptEpoch,
+				running: true,
+				done: false,
+			});
 			_cardSetRunningUI(name, true);
 			_cardUpdateProgress(name);
 			_cardStartLogStream(name);
 		} else if (status === "done") {
-			_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: epochs, running: false, done: true });
+			_cardState.set(name, {
+				eventSource: null,
+				totalEpochs: epochs,
+				currentEpoch: epochs,
+				running: false,
+				done: true,
+			});
 		} else if (ckptEpoch > 0) {
 			// Idle but has checkpoint progress — show it
-			_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: ckptEpoch, running: false, done: false });
+			_cardState.set(name, {
+				eventSource: null,
+				totalEpochs: epochs,
+				currentEpoch: ckptEpoch,
+				running: false,
+				done: false,
+			});
 			_cardUpdateProgress(name);
 		}
 	}
@@ -211,7 +248,10 @@ async function cardLaunch(name) {
 		const res = await fetch(`/api/configs/get/${encodeURIComponent(name)}`);
 		if (!res.ok) throw new Error("Config not found");
 		const config = await res.json();
-		command = config.command.replace(/\s*\\\s*/g, " ").replace(/\s+/g, " ").trim();
+		command = config.command
+			.replace(/\s*\\\s*/g, " ")
+			.replace(/\s+/g, " ")
+			.trim();
 	} catch (e) {
 		alert("Error loading config: " + e.message);
 		return;
@@ -232,7 +272,12 @@ async function cardLaunch(name) {
 
 		const epochs = parseInt(command.match(/--epochs\s+(\d+)/)?.[1]) || 1;
 		const prev = _cardState.get(name);
-		_cardState.set(name, { eventSource: null, totalEpochs: epochs, currentEpoch: prev?.currentEpoch || 0, running: true });
+		_cardState.set(name, {
+			eventSource: null,
+			totalEpochs: epochs,
+			currentEpoch: prev?.currentEpoch || 0,
+			running: true,
+		});
 		_cardSetRunningUI(name, true);
 		_cardUpdateProgress(name);
 		_cardStartLogStream(name);
@@ -248,7 +293,10 @@ async function cardInfer(name) {
 		const res = await fetch(`/api/configs/get/${encodeURIComponent(name)}`);
 		if (!res.ok) throw new Error("Config not found");
 		const config = await res.json();
-		command = config.command.replace(/\s*\\\s*/g, " ").replace(/\s+/g, " ").trim();
+		command = config.command
+			.replace(/\s*\\\s*/g, " ")
+			.replace(/\s+/g, " ")
+			.trim();
 		command += " --mode infer";
 	} catch (e) {
 		alert("Error loading config: " + e.message);
@@ -268,7 +316,14 @@ async function cardInfer(name) {
 			return;
 		}
 
-		_cardState.set(name, { eventSource: null, totalEpochs: 0, currentEpoch: 0, running: true, done: false, inferring: true });
+		_cardState.set(name, {
+			eventSource: null,
+			totalEpochs: 0,
+			currentEpoch: 0,
+			running: true,
+			done: false,
+			inferring: true,
+		});
 		_cardSetRunningUI(name, true);
 		_cardSetProgress(name, 0);
 		_cardStartLogStream(name);
@@ -326,7 +381,9 @@ function _cardStartLogStream(name) {
 		state.eventSource.close();
 	}
 
-	const es = new EventSource(`/api/launch/logs?run_id=${encodeURIComponent(name)}`);
+	const es = new EventSource(
+		`/api/launch/logs?run_id=${encodeURIComponent(name)}`,
+	);
 	state.eventSource = es;
 
 	es.onmessage = (e) => {
@@ -375,9 +432,10 @@ function _cardUpdateProgress(name) {
 	const state = _cardState.get(name);
 	if (!state) return;
 
-	const progress = state.totalEpochs > 0
-		? Math.min((state.currentEpoch / state.totalEpochs) * 100, 100)
-		: 0;
+	const progress =
+		state.totalEpochs > 0
+			? Math.min((state.currentEpoch / state.totalEpochs) * 100, 100)
+			: 0;
 
 	_cardSetProgress(name, Math.round(progress));
 }
@@ -415,7 +473,7 @@ async function deleteConfig(configName) {
 		if (!confirm(`Config "${configName}" is running. Stop and delete?`)) return;
 		await cardStop(configName);
 		// Brief wait for stop to take effect
-		await new Promise(r => setTimeout(r, 500));
+		await new Promise((r) => setTimeout(r, 500));
 	} else {
 		if (!confirm(`Delete config "${configName}"?`)) return;
 	}
@@ -510,12 +568,12 @@ function showNotification(message) {
 }
 
 async function syncWandb() {
-	const btn = document.querySelector('#configs-page .sub-tab');
+	const btn = document.querySelector("#configs-page .sub-tab");
 	btn.disabled = true;
-	btn.textContent = 'Syncing...';
+	btn.textContent = "Syncing...";
 
 	try {
-		const response = await fetch('/api/configs/sync-wandb', { method: 'POST' });
+		const response = await fetch("/api/configs/sync-wandb", { method: "POST" });
 		if (!response.ok) {
 			const err = await response.json();
 			throw new Error(err.detail);
@@ -523,23 +581,25 @@ async function syncWandb() {
 
 		const result = await response.json();
 		const parts = [];
-		if (result.deleted.length > 0) parts.push(`Deleted ${result.deleted.length} orphaned run(s)`);
-		if (result.updated.length > 0) parts.push(`Updated ${result.updated.length}`);
-		if (parts.length === 0) parts.push('W&B already in sync');
+		if (result.deleted.length > 0)
+			parts.push(`Deleted ${result.deleted.length} orphaned run(s)`);
+		if (result.updated.length > 0)
+			parts.push(`Updated ${result.updated.length}`);
+		if (parts.length === 0) parts.push("W&B already in sync");
 
-		showNotification(parts.join(', '));
+		showNotification(parts.join(", "));
 	} catch (error) {
-		alert('W&B sync error: ' + error.message);
+		alert("W&B sync error: " + error.message);
 	} finally {
 		btn.disabled = false;
-		btn.textContent = 'Sync W&B';
+		btn.textContent = "Sync W&B";
 	}
 }
 
 window.syncWandb = syncWandb;
 
 // Load configs when configs page is viewed
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", () => {
 	loadConfigs();
 });
 
