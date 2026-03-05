@@ -7,16 +7,21 @@ from PIL import Image
 from lightning.fabric import Fabric
 
 from .train import get_metrics, compute_metrics, get_metric_values
+from .inferers import run_inferer
 
 
-def infer(fabric: Fabric, model, infer_loader, save_dir, spatial_dims=2):
+def infer(fabric: Fabric, model, infer_loader, save_dir, spatial_dims=2, inferer=None):
     model.eval()
     os.makedirs(save_dir, exist_ok=True)
 
     with torch.no_grad():
         for idx, batch in enumerate(infer_loader):
             inputs = batch["image"]
-            output = model(inputs)
+            output = run_inferer(inferer, model, inputs)
+
+            # Handle tuple outputs (e.g. from VAE models)
+            if isinstance(output, (tuple, list)):
+                output = output[0]
 
             result = torch.softmax(output, dim=1)
             result = torch.argmax(result, dim=1)
@@ -43,7 +48,14 @@ def infer(fabric: Fabric, model, infer_loader, save_dir, spatial_dims=2):
 
 
 def infer_with_metrics(
-    fabric: Fabric, model, test_loader, metric_names, num_classes, save_dir=None, spatial_dims=2
+    fabric: Fabric,
+    model,
+    test_loader,
+    metric_names,
+    num_classes,
+    save_dir=None,
+    spatial_dims=2,
+    inferer=None,
 ):
     model.eval()
     metric_aggregators = get_metrics(metric_names)
@@ -57,15 +69,20 @@ def infer_with_metrics(
             inputs = batch["image"]
             labels = batch["label"]
 
-            output = model(inputs)
+            output = run_inferer(inferer, model, inputs)
+
+            # Handle tuple outputs (e.g. from VAE models)
+            if isinstance(output, (tuple, list)):
+                output = output[0]
 
             # One-hot encode predictions and labels for MONAI metrics
             preds = torch.softmax(output, dim=1)
             preds_onehot = (preds == preds.max(dim=1, keepdim=True).values).float()
             labels_onehot = F.one_hot(labels.squeeze(1).long(), num_classes)
-            labels_onehot = labels_onehot.permute(0, 3, 1, 2).float()
-            if spatial_dims == 3:
-                labels_onehot = labels_onehot.permute(0, 1, 2, 3, 4)
+            # Permute to (B, C, ...) format
+            dims = list(range(labels_onehot.ndim))
+            dims = [dims[0], dims[-1]] + dims[1:-1]
+            labels_onehot = labels_onehot.permute(*dims).float()
 
             compute_metrics(metric_aggregators, preds_onehot, labels_onehot)
 
