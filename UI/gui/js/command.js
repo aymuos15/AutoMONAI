@@ -153,6 +153,7 @@ let _resumeResults = [];
 async function loadResumeOptions() {
 	try {
 		const response = await fetch("/api/results");
+		if (!response.ok) return;
 		_resumeResults = await response.json();
 
 		const resumeSelect = document.getElementById("resume_from");

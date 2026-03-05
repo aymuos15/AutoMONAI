@@ -12,10 +12,7 @@ def main():
     ui_dir = Path(__file__).parent.parent
     server_script = ui_dir / "server.py"
 
-    print("🚀 Starting MonaiUI Web GUI...")
-    print("📍 Access the GUI at: http://localhost:8888")
-    print("📚 API Docs at: http://localhost:8888/docs")
-    print("Press Ctrl+C to stop\n")
+    print("Starting MonaiUI Web GUI...\n")
 
     try:
         # Give server a moment to start, then open browser
