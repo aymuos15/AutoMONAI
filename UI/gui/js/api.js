@@ -18,8 +18,8 @@ async function loadDatasets() {
 
 async function loadDatasetClasses() {
 	try {
-		const response = await fetch("/api/options");
-		const options = await response.json();
+		const response = await fetch("/api/models");
+		const _data = await response.json();
 
 		const trainSelect = document.getElementById("train_dataset");
 		const inferenceSelect = document.getElementById("inference_dataset");
@@ -28,7 +28,12 @@ async function loadDatasetClasses() {
 			select.innerHTML = "";
 		}
 
-		const classes = Object.keys(options.dataset_classes);
+		const classes = [
+			"Dataset",
+			"CacheDataset",
+			"PersistentDataset",
+			"SmartCacheDataset",
+		];
 		for (const className of classes) {
 			const optT = document.createElement("option");
 			optT.value = className;

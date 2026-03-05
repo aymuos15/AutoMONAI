@@ -163,50 +163,6 @@ def create_train_dataset(
         )
         ds.start()
         return ds
-    elif dataset_class_name == "LMDBDataset":
-        from monai.data import LMDBDataset
-
-        lmdb_path = cache_dir or "/tmp/automonai_lmdb"
-        return LMDBDataset(
-            files, transform=transform, lmdb_kwargs={"map_size": 1 << 30}, cache_dir=lmdb_path
-        )
-    elif dataset_class_name == "CacheNTransDataset":
-        from monai.data import CacheNTransDataset
-
-        return CacheNTransDataset(files, transform=transform, cache_n_trans=3, cache_dir=cache_dir)
-    elif dataset_class_name == "ArrayDataset":
-        from monai.data import ArrayDataset
-
-        images = [f["image"] for f in files]
-        labels = [f["label"] for f in files]
-        return ArrayDataset(
-            img=images, img_transform=transform, seg=labels, seg_transform=label_transform
-        )
-    elif dataset_class_name == "ZipDataset":
-        from monai.data import ZipDataset
-
-        img_ds = Dataset([f["image"] for f in files], transform=transform)
-        lbl_ds = Dataset([f["label"] for f in files], transform=label_transform)
-        return ZipDataset([img_ds, lbl_ds])
-    elif dataset_class_name == "GridPatchDataset":
-        from monai.data import GridPatchDataset
-
-        return GridPatchDataset(data=files, transform=transform, patch_size=(64, 64))
-    elif dataset_class_name == "PatchDataset":
-        from monai.data import PatchDataset
-
-        ds = Dataset(files, transform=transform)
-        return PatchDataset(data=ds, patch_func=lambda x: [x], samples_per_image=1)
-    elif dataset_class_name == "DecathlonDataset":
-        from monai.apps import DecathlonDataset as MonaiDecathlonDataset
-
-        return MonaiDecathlonDataset(
-            root_dir=str(cache_dir or "/tmp/automonai_decathlon"),
-            task="Task01_BrainTumour",
-            section="training",
-            transform=transform,
-            download=False,
-        )
     else:
         raise ValueError(f"Unknown dataset class: {dataset_class_name}")
 
@@ -220,29 +176,5 @@ def create_inference_dataset(dataset_class_name, files, transform, cache_rate=1.
         return PersistentDataset(files, transform=transform, cache_dir=cache_dir)
     elif dataset_class_name == "SmartCacheDataset":
         return SmartCacheDataset(files, transform=transform, cache_rate=cache_rate)
-    elif dataset_class_name == "LMDBDataset":
-        from monai.data import LMDBDataset
-
-        lmdb_path = cache_dir or "/tmp/automonai_lmdb_infer"
-        return LMDBDataset(
-            files, transform=transform, lmdb_kwargs={"map_size": 1 << 30}, cache_dir=lmdb_path
-        )
-    elif dataset_class_name == "CacheNTransDataset":
-        from monai.data import CacheNTransDataset
-
-        return CacheNTransDataset(files, transform=transform, cache_n_trans=3, cache_dir=cache_dir)
-    elif dataset_class_name == "ArrayDataset":
-        from monai.data import ArrayDataset
-
-        images = [f["image"] for f in files]
-        return ArrayDataset(img=images, img_transform=transform)
-    elif dataset_class_name in (
-        "ZipDataset",
-        "GridPatchDataset",
-        "PatchDataset",
-        "DecathlonDataset",
-    ):
-        # Fall back to basic dataset for inference with these types
-        return TestDataset(files, transform=transform)
     else:
         raise ValueError(f"Unknown dataset class: {dataset_class_name}")

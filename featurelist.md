@@ -7,18 +7,18 @@ Features from MONAI not yet supported. Check off as implemented.
 ## Models / Architectures
 
 ### Segmentation
-- [x] `BasicUNet` — Simplified U-Net
-- [x] `BasicUNetPlusPlus` — UNet++ with nested skip connections
-- [x] `DynUNet` — Dynamic U-Net (nnU-Net style)
-- [x] `VNet` — Volumetric segmentation
-- [x] `HighResNet` — Brain parcellation
-- [x] `UNETR` — UNet with Vision Transformers
-- [x] `SegResNetVAE` — SegResNet with variational autoencoder
-- [x] `SegResNetDS` — SegResNet with deep supervision
-- [x] `SegResNetDS2` — SegResNet DS variant 2
-- [x] `FlexibleUNet` — Configurable backbone U-Net
-- [x] `DiNTS` — Differentiable Neural Architecture Search
-- [x] `MedNeXt` (S/M/B/L) — ConvNeXt-style medical nets
+- [ ] `BasicUNet` — Simplified U-Net
+- [ ] `BasicUNetPlusPlus` — UNet++ with nested skip connections
+- [ ] `DynUNet` — Dynamic U-Net (nnU-Net style)
+- [ ] `VNet` — Volumetric segmentation
+- [ ] `HighResNet` — Brain parcellation
+- [ ] `UNETR` — UNet with Vision Transformers
+- [ ] `SegResNetVAE` — SegResNet with variational autoencoder
+- [ ] `SegResNetDS` — SegResNet with deep supervision
+- [ ] `SegResNetDS2` — SegResNet DS variant 2
+- [ ] `FlexibleUNet` — Configurable backbone U-Net
+- [ ] `DiNTS` — Differentiable Neural Architecture Search
+- [ ] `MedNeXt` (S/M/B/L) — ConvNeXt-style medical nets
 
 
 ---
@@ -26,22 +26,22 @@ Features from MONAI not yet supported. Check off as implemented.
 ## Loss Functions
 
 ### Segmentation Losses
-- [x] `DiceCELoss` — Dice + Cross Entropy combined
-- [x] `DiceFocalLoss` — Dice + Focal combined
-- [x] `GeneralizedDiceLoss` — Weighted Dice for class imbalance
-- [x] `GeneralizedWassersteinDiceLoss` — Wasserstein distance-based
-- [x] `GeneralizedDiceFocalLoss` — Generalized Dice + Focal
-- [x] `TverskyLoss` — Alpha/beta weighted Dice variant
-- [x] `HausdorffDTLoss` — Hausdorff Distance Transform loss
-- [x] `LogHausdorffDTLoss` — Log Hausdorff DT loss
-- [x] `SoftclDiceLoss` — Soft centerline Dice (tubular structures)
-- [x] `SoftDiceclDiceLoss` — Soft Dice + clDice combined
-- [x] `MaskedDiceLoss` — Spatially masked Dice
-- [x] `NACLLoss` — Neighbor-Aware Constrained Loss
-- [x] `AsymmetricUnifiedFocalLoss` — Asymmetric focal
-- [x] `SSIMLoss` — Structural similarity
+- [ ] `DiceCELoss` — Dice + Cross Entropy combined
+- [ ] `DiceFocalLoss` — Dice + Focal combined
+- [ ] `GeneralizedDiceLoss` — Weighted Dice for class imbalance
+- [ ] `GeneralizedWassersteinDiceLoss` — Wasserstein distance-based
+- [ ] `GeneralizedDiceFocalLoss` — Generalized Dice + Focal
+- [ ] `TverskyLoss` — Alpha/beta weighted Dice variant
+- [ ] `HausdorffDTLoss` — Hausdorff Distance Transform loss
+- [ ] `LogHausdorffDTLoss` — Log Hausdorff DT loss
+- [ ] `SoftclDiceLoss` — Soft centerline Dice (tubular structures)
+- [ ] `SoftDiceclDiceLoss` — Soft Dice + clDice combined
+- [ ] `MaskedDiceLoss` — Spatially masked Dice
+- [ ] `NACLLoss` — Neighbor-Aware Constrained Loss
+- [ ] `AsymmetricUnifiedFocalLoss` — Asymmetric focal
+- [ ] `SSIMLoss` — Structural similarity
 - [ ] `PerceptualLoss` — LPIPS-based
-- [x] `DeepSupervisionLoss` — Multi-scale weighted loss
+- [ ] `DeepSupervisionLoss` — Multi-scale weighted loss
 
 
 ### Loss Wrappers
@@ -55,44 +55,44 @@ Features from MONAI not yet supported. Check off as implemented.
 ### Spatial
 - [ ] `Spacing` / `Spacingd` — Resample to target voxel spacing
 - [ ] `Orientation` / `Orientationd` — Canonical axis reorientation
-- [x] `RandAffine` — Random affine (combined rotate/scale/translate)
-- [x] `RandElasticDeformation` / `Rand2DElastic` / `Rand3DElastic` — Elastic deformation
-- [x] `RandCropByPosNegLabel` — Balanced foreground/background patch sampling
-- [x] `CropForeground` — Auto-crop to foreground
-- [x] `RandRotate90` — Random 90° rotation
-- [x] `RandSpatialCropSamples` — Multiple random crop samples
-- [x] `SpatialPad` / `BorderPad` / `DivisiblePad` — Padding transforms
-- [x] `GridPatch` / `GridSplit` — Grid-based patching
+- [ ] `RandAffine` — Random affine (combined rotate/scale/translate)
+- [ ] `RandElasticDeformation` / `Rand2DElastic` / `Rand3DElastic` — Elastic deformation
+- [ ] `RandCropByPosNegLabel` — Balanced foreground/background patch sampling
+- [ ] `CropForeground` — Auto-crop to foreground
+- [ ] `RandRotate90` — Random 90° rotation
+- [ ] `RandSpatialCropSamples` — Multiple random crop samples
+- [ ] `SpatialPad` / `BorderPad` / `DivisiblePad` — Padding transforms
+- [ ] `GridPatch` / `GridSplit` — Grid-based patching
 
 ### Intensity
-- [x] `RandGibbsNoise` — Gibbs artifact augmentation
-- [x] `RandKSpaceSpikeNoise` — K-space spike noise
-- [x] `RandBiasField` — Bias field augmentation
-- [x] `RandCoarseDropout` — Cutout augmentation
-- [x] `RandCoarseShuffle` — Coarse shuffle
-- [x] `RandHistogramShift` — Histogram shifting
-- [x] `RandStdShiftIntensity` / `RandShiftIntensity` — Intensity shifting
-- [x] `RandScaleIntensity` — Random intensity scaling
-- [x] `RandGaussianSmooth` — Gaussian smoothing
-- [x] `RandGaussianSharpen` — Gaussian sharpening
+- [ ] `RandGibbsNoise` — Gibbs artifact augmentation
+- [ ] `RandKSpaceSpikeNoise` — K-space spike noise
+- [ ] `RandBiasField` — Bias field augmentation
+- [ ] `RandCoarseDropout` — Cutout augmentation
+- [ ] `RandCoarseShuffle` — Coarse shuffle
+- [ ] `RandHistogramShift` — Histogram shifting
+- [ ] `RandStdShiftIntensity` / `RandShiftIntensity` — Intensity shifting
+- [ ] `RandScaleIntensity` — Random intensity scaling
+- [ ] `RandGaussianSmooth` — Gaussian smoothing
+- [ ] `RandGaussianSharpen` — Gaussian sharpening
 - [ ] `GaussianSmooth` / `GaussianSharpen` — Deterministic smoothing/sharpening
-- [x] `MaskIntensity` — Mask-based intensity filtering
-- [x] `ClipIntensityPercentiles` — Percentile-based clipping
-- [x] `ScaleIntensityRange` — Range-based intensity scaling
-- [x] `ThresholdIntensity` — Intensity thresholding
+- [ ] `MaskIntensity` — Mask-based intensity filtering
+- [ ] `ClipIntensityPercentiles` — Percentile-based clipping
+- [ ] `ScaleIntensityRange` — Range-based intensity scaling
+- [ ] `ThresholdIntensity` — Intensity thresholding
 
 ---
 
 ## Metrics
 
-- [x] `HausdorffDistanceMetric` — Boundary distance
-- [x] `SurfaceDistanceMetric` — Average surface distance
-- [x] `SurfaceDiceMetric` — Normalized surface Dice (NSD)
-- [x] `GeneralizedDiceScore` — Weighted Dice score
-- [x] `ConfusionMatrixMetric` — Sensitivity, specificity, precision, F1
+- [ ] `HausdorffDistanceMetric` — Boundary distance
+- [ ] `SurfaceDistanceMetric` — Average surface distance
+- [ ] `SurfaceDiceMetric` — Normalized surface Dice (NSD)
+- [ ] `GeneralizedDiceScore` — Weighted Dice score
+- [ ] `ConfusionMatrixMetric` — Sensitivity, specificity, precision, F1
 - [ ] `ROCAUCMetric` — AUC-ROC
-- [x] `FBetaScore` — F-beta score
-- [x] `PanopticQualityMetric` — PQ, SQ, RQ
+- [ ] `FBetaScore` — F-beta score
+- [ ] `PanopticQualityMetric` — PQ, SQ, RQ
 - [ ] `CalibrationMetric` — Expected calibration error
 
 
@@ -100,37 +100,37 @@ Features from MONAI not yet supported. Check off as implemented.
 
 ## Inferers
 
-- [x] `SlidingWindowInferer` — Sliding window with overlap/blending
-- [x] `PatchInferer` — Patch-based with splitter/merger
-- [x] `SaliencyInferer` — GradCAM/CAM saliency maps
-- [x] `SliceInferer` — 2D model on 3D volumes slice-by-slice
+- [ ] `SlidingWindowInferer` — Sliding window with overlap/blending
+- [ ] `PatchInferer` — Patch-based with splitter/merger
+- [ ] `SaliencyInferer` — GradCAM/CAM saliency maps
+- [ ] `SliceInferer` — 2D model on 3D volumes slice-by-slice
 
 ---
 
 ## Optimizers
 
-- [x] `Novograd` — MONAI layer-wise adaptive optimizer
-- [x] `RMSprop`
+- [ ] `Novograd` — MONAI layer-wise adaptive optimizer
+- [ ] `RMSprop`
 - [ ] `LearningRateFinder` — Automatic LR range test
 
 ---
 
 ## Learning Rate Schedulers
 
-- [x] `WarmupCosineSchedule` — Linear warmup + cosine decay
-- [x] `CosineAnnealingWarmRestarts` — Cosine with warm restarts
-- [x] `PolynomialLR` — Polynomial decay
+- [ ] `WarmupCosineSchedule` — Linear warmup + cosine decay
+- [ ] `CosineAnnealingWarmRestarts` — Cosine with warm restarts
+- [ ] `PolynomialLR` — Polynomial decay
 
 ---
 
 ## Datasets
 
-- [x] `LMDBDataset` — LMDB-backed persistent cache
+- [ ] `LMDBDataset` — LMDB-backed persistent cache
 - [ ] `GDSDataset` — GPU Direct Storage
-- [x] `CacheNTransDataset` — Cache first N transforms
-- [x] `ArrayDataset` / `ImageDataset`
-- [x] `ZipDataset` — Combine multiple datasets
-- [x] `GridPatchDataset` / `PatchDataset`
+- [ ] `CacheNTransDataset` — Cache first N transforms
+- [ ] `ArrayDataset` / `ImageDataset`
+- [ ] `ZipDataset` — Combine multiple datasets
+- [ ] `GridPatchDataset` / `PatchDataset`
 - [ ] `ThreadDataLoader` — Faster data loading for cached data
-- [x] `DecathlonDataset` — Medical Segmentation Decathlon
+- [ ] `DecathlonDataset` — Medical Segmentation Decathlon
 - [ ] `TciaDataset`

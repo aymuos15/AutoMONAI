@@ -39,45 +39,6 @@ from .inference import infer, infer_with_metrics  # noqa: E402
 from .results import RunLogger  # noqa: E402
 from .train import train_one_epoch, get_loss  # noqa: E402
 from .transforms import get_transforms  # noqa: E402
-from .inferers import get_inferer  # noqa: E402
-
-
-def _create_optimizer(name, parameters, lr):
-    """Create optimizer by name."""
-    if name == "adamw":
-        return torch.optim.AdamW(parameters, lr=lr)
-    elif name == "sgd":
-        return torch.optim.SGD(parameters, lr=lr, momentum=0.9)
-    elif name == "novograd":
-        from monai.optimizers import Novograd
-
-        return Novograd(parameters, lr=lr)
-    elif name == "rmsprop":
-        return torch.optim.RMSprop(parameters, lr=lr)
-    else:  # adam
-        return torch.optim.Adam(parameters, lr=lr)
-
-
-def _create_scheduler(name, optimizer, epochs, patience):
-    """Create LR scheduler by name."""
-    if name == "cosine":
-        return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
-    elif name == "step":
-        return torch.optim.lr_scheduler.StepLR(optimizer, step_size=max(1, epochs // 3), gamma=0.1)
-    elif name == "plateau":
-        return torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=max(1, patience // 2))
-    elif name == "warmup_cosine":
-        from monai.optimizers.lr_scheduler import WarmupCosineSchedule
-
-        return WarmupCosineSchedule(optimizer, warmup_steps=max(1, epochs // 10), t_total=epochs)
-    elif name == "cosine_warm_restarts":
-        return torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer, T_0=max(1, epochs // 4), T_mult=2
-        )
-    elif name == "polynomial":
-        return torch.optim.lr_scheduler.PolynomialLR(optimizer, total_iters=epochs, power=1.0)
-    else:
-        return None
 
 
 def main():
@@ -91,7 +52,6 @@ def main():
     # Filter out "none" from list args
     args.norm = [v for v in args.norm if v != "none"]
     args.crop = [v for v in args.crop if v != "none"]
-    args.extra_transforms = [v for v in args.extra_transforms if v != "none"]
 
     if args.show_config:
         print_config()
@@ -220,7 +180,6 @@ def main():
         config["normalization"] = loaded_config.get("normalization", [])
         config["crop"] = loaded_config.get("crop", [])
         config["augmentation_enabled"] = loaded_config.get("augmentation_enabled", False)
-        config["extra_transforms"] = loaded_config.get("extra_transforms", [])
         config["optimizer"] = args.optimizer
         config["scheduler"] = args.scheduler
         config["mixed_precision"] = args.mixed_precision
@@ -229,7 +188,6 @@ def main():
         config["resume_from"] = resume_from
         config["resume_checkpoint"] = resume_checkpoint
         config["start_epoch"] = start_epoch
-        config["inferer"] = loaded_config.get("inferer", args.inferer)
     else:
         config = {
             "dataset": dataset_name,
@@ -248,13 +206,11 @@ def main():
             "normalization": args.norm,
             "crop": args.crop,
             "augmentation_enabled": args.augment,
-            "extra_transforms": args.extra_transforms,
             "optimizer": args.optimizer,
             "mixed_precision": args.mixed_precision,
             "scheduler": args.scheduler,
             "early_stopping_enabled": args.early_stopping,
             "patience": args.patience,
-            "inferer": args.inferer,
         }
     if resume_from:
         config["resume_from"] = resume_from
@@ -280,14 +236,8 @@ def main():
 
     print(f"Using device: {fabric.device}")
 
-    extra_t = config.get("extra_transforms", [])
     train_transforms = get_transforms(
-        img_size,
-        spatial_dims,
-        norm=args.norm,
-        crop=args.crop,
-        is_train=True,
-        extra_transforms=extra_t if extra_t else None,
+        img_size, spatial_dims, norm=args.norm, crop=args.crop, is_train=True
     )
     label_transforms = get_transforms(
         img_size, spatial_dims, norm=args.norm, crop=args.crop, is_train=True
@@ -334,8 +284,13 @@ def main():
     model = get_model(model_name, in_channels, out_channels, spatial_dims, config["image_size"])
     loss_fn = get_loss(config["loss"])
 
-    # Create optimizer
-    optimizer = _create_optimizer(config["optimizer"], model.parameters(), config["learning_rate"])
+    # Create optimizer based on config
+    if config["optimizer"] == "adamw":
+        optimizer = torch.optim.AdamW(model.parameters(), lr=config["learning_rate"])
+    elif config["optimizer"] == "sgd":
+        optimizer = torch.optim.SGD(model.parameters(), lr=config["learning_rate"], momentum=0.9)
+    else:  # adam
+        optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
 
     # Setup model, optimizer, and dataloaders with Fabric
     model, optimizer = fabric.setup(model, optimizer)
@@ -349,14 +304,6 @@ def main():
         if checkpoint_data["optimizer_state"] is not None:
             optimizer.load_state_dict(checkpoint_data["optimizer_state"])
         print(f"Loaded checkpoint from epoch {checkpoint_data['epoch']}")
-
-    # Setup inferer
-    roi_size = (config["image_size"],) * spatial_dims
-    inferer = get_inferer(
-        config.get("inferer", "simple"), model=model, roi_size=roi_size, spatial_dims=spatial_dims
-    )
-    if inferer:
-        print(f"Using inferer: {config.get('inferer', 'simple')}")
 
     # Inference mode: evaluate test set with metrics, log to W&B, exit
     if args.mode == "infer":
@@ -389,7 +336,6 @@ def main():
             out_channels,
             save_dir=save_dir,
             spatial_dims=spatial_dims,
-            inferer=inferer,
         )
 
         # Log to W&B chart + summary with infer/ prefix
@@ -406,9 +352,18 @@ def main():
         sys.exit(0)
 
     # Setup learning rate scheduler
-    scheduler = _create_scheduler(
-        config["scheduler"], optimizer, config["epochs"], config["patience"]
-    )
+    if config["scheduler"] == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config["epochs"])
+    elif config["scheduler"] == "step":
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=max(1, config["epochs"] // 3), gamma=0.1
+        )
+    elif config["scheduler"] == "plateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, patience=max(1, config["patience"] // 2)
+        )
+    else:
+        scheduler = None
 
     no_improve_count = 0
 
@@ -428,9 +383,10 @@ def main():
         loss = result["loss"]
 
         epoch_metrics = {"loss": loss}
-        for metric_name in config["metrics"]:
-            if metric_name in result:
-                epoch_metrics[metric_name] = result[metric_name]
+        if "dice" in result:
+            epoch_metrics["dice"] = result["dice"]
+        if "iou" in result:
+            epoch_metrics["iou"] = result["iou"]
 
         wandb.log({"epoch": current_epoch, **epoch_metrics})  # type: ignore[unresolved-attribute]
 
@@ -458,9 +414,10 @@ def main():
                 no_improve_count = 0
 
         log_msg = f"Epoch {current_epoch}/{total_epochs} - Loss: {loss:.4f}"
-        for metric_name in config["metrics"]:
-            if metric_name in result:
-                log_msg += f" - {metric_name}: {result[metric_name]:.4f}"
+        if "dice" in result:
+            log_msg += f" - Dice: {result['dice']:.4f}"
+        if "iou" in result:
+            log_msg += f" - IoU: {result['iou']:.4f}"
         print(log_msg)
 
     wandb.finish()  # type: ignore[unresolved-attribute]

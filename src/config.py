@@ -21,66 +21,6 @@ MODELS = {
         "name": "Swin UNETR",
         "description": "Swin Transformer-based UNETR",
     },
-    "basicunet": {
-        "name": "BasicUNet",
-        "description": "Simplified U-Net",
-    },
-    "basicunetplusplus": {
-        "name": "BasicUNet++",
-        "description": "UNet++ with nested skip connections",
-    },
-    "dynunet": {
-        "name": "DynUNet",
-        "description": "Dynamic U-Net (nnU-Net style)",
-    },
-    "vnet": {
-        "name": "VNet",
-        "description": "Volumetric segmentation network",
-    },
-    "highresnet": {
-        "name": "HighResNet",
-        "description": "High-resolution network for brain parcellation",
-    },
-    "unetr": {
-        "name": "UNETR",
-        "description": "UNet with Vision Transformers",
-    },
-    "segresnetvae": {
-        "name": "SegResNetVAE",
-        "description": "SegResNet with variational autoencoder",
-    },
-    "segresnetds": {
-        "name": "SegResNetDS",
-        "description": "SegResNet with deep supervision",
-    },
-    "segresnetds2": {
-        "name": "SegResNetDS2",
-        "description": "SegResNet deep supervision variant 2",
-    },
-    "flexibleunet": {
-        "name": "FlexibleUNet",
-        "description": "Configurable backbone U-Net (EfficientNet)",
-    },
-    "dints": {
-        "name": "DiNTS",
-        "description": "Differentiable Neural Architecture Search",
-    },
-    "mednext_s": {
-        "name": "MedNeXt-S",
-        "description": "ConvNeXt-style medical net (Small)",
-    },
-    "mednext_m": {
-        "name": "MedNeXt-M",
-        "description": "ConvNeXt-style medical net (Medium)",
-    },
-    "mednext_b": {
-        "name": "MedNeXt-B",
-        "description": "ConvNeXt-style medical net (Base)",
-    },
-    "mednext_l": {
-        "name": "MedNeXt-L",
-        "description": "ConvNeXt-style medical net (Large)",
-    },
 }
 
 TRAINING_DEFAULTS = {
@@ -98,91 +38,19 @@ TRAINING_DEFAULTS = {
     "early_stopping": False,
     "patience": 5,
     "scheduler": "none",
-    "inferer": "simple",
 }
 
-METRICS_AVAILABLE = [
-    "dice",
-    "iou",
-    "hausdorff",
-    "surface_distance",
-    "surface_dice",
-    "generalized_dice",
-    "confusion_matrix",
-    "rocauc",
-    "fbeta",
-    "panoptic_quality",
-    "calibration",
-]
+METRICS_AVAILABLE = ["dice", "iou"]
 
-LOSSES_AVAILABLE = [
-    "dice",
-    "cross_entropy",
-    "focal",
-    "dice_ce",
-    "dice_focal",
-    "generalized_dice",
-    "generalized_wasserstein_dice",
-    "generalized_dice_focal",
-    "tversky",
-    "hausdorff_dt",
-    "log_hausdorff_dt",
-    "soft_cl_dice",
-    "soft_dice_cl_dice",
-    "masked_dice",
-    "nacl",
-    "asymmetric_unified_focal",
-    "ssim",
-    "deep_supervision",
-]
+LOSSES_AVAILABLE = ["dice", "cross_entropy", "focal"]
 
 PREPROC_NORM_AVAILABLE = ["minmax", "zscore"]
 
 PREPROC_CROP_AVAILABLE = ["center", "random"]
 
-OPTIMIZERS_AVAILABLE = ["adam", "adamw", "sgd", "novograd", "rmsprop"]
+OPTIMIZERS_AVAILABLE = ["adam", "adamw", "sgd"]
 
-SCHEDULERS_AVAILABLE = [
-    "none",
-    "cosine",
-    "step",
-    "plateau",
-    "warmup_cosine",
-    "cosine_warm_restarts",
-    "polynomial",
-]
-
-INFERERS_AVAILABLE = ["simple", "sliding_window", "patch", "saliency", "slice"]
-
-AUGMENTATION_TRANSFORMS = [
-    "rotate",
-    "flip",
-    "rand_affine",
-    "rand_elastic_2d",
-    "rand_elastic_3d",
-    "rand_crop_pos_neg",
-    "crop_foreground",
-    "rand_rotate90",
-    "rand_spatial_crop_samples",
-    "spatial_pad",
-    "border_pad",
-    "divisible_pad",
-    "grid_patch",
-    "rand_gibbs_noise",
-    "rand_kspace_spike_noise",
-    "rand_bias_field",
-    "rand_coarse_dropout",
-    "rand_coarse_shuffle",
-    "rand_histogram_shift",
-    "rand_shift_intensity",
-    "rand_scale_intensity",
-    "rand_gaussian_smooth",
-    "rand_gaussian_sharpen",
-    "mask_intensity",
-    "clip_intensity_percentiles",
-    "scale_intensity_range",
-    "threshold_intensity",
-]
+SCHEDULERS_AVAILABLE = ["none", "cosine", "step", "plateau"]
 
 DATASET_CLASSES = {
     "Dataset": {
@@ -200,34 +68,6 @@ DATASET_CLASSES = {
     "SmartCacheDataset": {
         "name": "SmartCacheDataset",
         "description": "Intelligent caching with automatic replacement",
-    },
-    "LMDBDataset": {
-        "name": "LMDBDataset",
-        "description": "LMDB-backed persistent cache for fast random access",
-    },
-    "CacheNTransDataset": {
-        "name": "CacheNTransDataset",
-        "description": "Cache first N transforms for partial caching",
-    },
-    "ArrayDataset": {
-        "name": "ArrayDataset",
-        "description": "Simple dataset from image/label arrays",
-    },
-    "ZipDataset": {
-        "name": "ZipDataset",
-        "description": "Combine multiple datasets together",
-    },
-    "GridPatchDataset": {
-        "name": "GridPatchDataset",
-        "description": "Grid-based patch extraction dataset",
-    },
-    "PatchDataset": {
-        "name": "PatchDataset",
-        "description": "Random patch extraction dataset",
-    },
-    "DecathlonDataset": {
-        "name": "DecathlonDataset",
-        "description": "Medical Segmentation Decathlon dataset",
     },
 }
 

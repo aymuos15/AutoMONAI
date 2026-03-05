@@ -11,9 +11,6 @@ from .config import (
     PREPROC_CROP_AVAILABLE,
     OPTIMIZERS_AVAILABLE,
     SCHEDULERS_AVAILABLE,
-    INFERERS_AVAILABLE,
-    AUGMENTATION_TRANSFORMS,
-    DATASET_CLASSES,
 )
 from .dataset import list_datasets
 
@@ -116,14 +113,14 @@ def get_parser():
         "--train_dataset_class",
         type=str,
         default="Dataset",
-        choices=list(DATASET_CLASSES.keys()),
+        choices=["Dataset", "CacheDataset", "PersistentDataset", "SmartCacheDataset"],
         help="Dataset class for training",
     )
     parser.add_argument(
         "--inference_dataset_class",
         type=str,
         default="Dataset",
-        choices=list(DATASET_CLASSES.keys()),
+        choices=["Dataset", "CacheDataset", "PersistentDataset", "SmartCacheDataset"],
         help="Dataset class for inference",
     )
     parser.add_argument(
@@ -193,14 +190,6 @@ def get_parser():
         type=float,
         default=0.5,
         help="Probability for each augmentation transform (0.0 to 1.0)",
-    )
-    parser.add_argument(
-        "--extra_transforms",
-        type=str,
-        nargs="*",
-        default=[],
-        choices=[*AUGMENTATION_TRANSFORMS, "none"],
-        help="Additional transforms to apply. Available: " + ", ".join(AUGMENTATION_TRANSFORMS),
     )
     parser.add_argument(
         "--norm",
@@ -276,13 +265,6 @@ def get_parser():
         default="train",
         choices=["train", "infer"],
         help="Run mode: train (default) or infer (evaluate test set with metrics)",
-    )
-    parser.add_argument(
-        "--inferer",
-        type=str,
-        default=TRAINING_DEFAULTS["inferer"],
-        choices=INFERERS_AVAILABLE,
-        help=f"Inferer to use. Available: {', '.join(INFERERS_AVAILABLE)}",
     )
 
     return parser
