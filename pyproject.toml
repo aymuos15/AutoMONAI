@@ -1,0 +1,120 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "AutoMONAI"
+version = "0.1.0"
+description = "Medical image segmentation framework with multiple architectures"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    {name = "MonaiUI Contributors"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Medical Science Apps",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "monai==1.5.1",
+    "torch>=2.0.0",
+    "lightning>=2.0.0",
+    "nibabel>=5.0.0",
+    "Pillow>=9.0.0",
+    "numpy>=1.20.0",
+    "scipy>=1.10.0",
+    "einops>=0.7.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "textual>=0.45.0",
+    "httpx>=0.24.0",
+    "wandb>=0.16.0",
+    "pynvml>=11.0.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",
+    "prek>=0.1.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+automonai-gui = "automonai.backend.cli.gui:main"
+automonai-train = "automonai.core.run:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/MonaiUI"
+Documentation = "https://github.com/yourusername/MonaiUI/blob/main/README.md"
+Repository = "https://github.com/yourusername/MonaiUI.git"
+Issues = "https://github.com/yourusername/MonaiUI/issues"
+
+[tool.setuptools]
+packages = {find = {where = ["."], include = ["automonai*"]}}
+
+[tool.pytest.ini_options]
+testpaths = ["automonai/core/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+minversion = "7.0"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--disable-warnings",
+]
+markers = [
+    "cuda: tests that require CUDA",
+    "slow: slow running tests",
+    "integration: integration tests",
+    "unit: unit tests",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = [
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".tox",
+    ".venv",
+    "build",
+    "dist",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.coverage.run]
+source = ["automonai"]
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

@@ -1,0 +1,43 @@
+function switchPage(pageName) {
+	const pages = document.querySelectorAll(".page");
+	pages.forEach((page) => {
+		page.classList.remove("active");
+	});
+
+	const tabs = document.querySelectorAll(".nav-tab");
+	tabs.forEach((tab) => {
+		tab.classList.remove("active");
+	});
+
+	document.getElementById(`${pageName}-page`).classList.add("active");
+
+	// Find and activate the corresponding nav tab
+	const navTab = Array.from(tabs).find((tab) => {
+		if (!tab.onclick) return false;
+		const match = tab.onclick.toString().match(/switchPage\('(\w+)'\)/);
+		return match && match[1] === pageName;
+	});
+	if (navTab) navTab.classList.add("active");
+
+	// Load configs and sync command if switching to configs page
+	if (pageName === "configs") {
+		loadConfigs();
+		syncLaunchCommand();
+	}
+}
+
+function switchSubTab(subTabName) {
+	const activePage = document.querySelector(".page.active");
+	const subPages = activePage.querySelectorAll(".sub-page");
+	subPages.forEach((page) => {
+		page.classList.remove("active");
+	});
+
+	const subTabs = activePage.querySelectorAll(".sub-tab");
+	subTabs.forEach((tab) => {
+		tab.classList.remove("active");
+	});
+
+	activePage.querySelector(`#sub-${subTabName}`).classList.add("active");
+	event.target.classList.add("active");
+}

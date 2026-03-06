@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonaiUI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles/base.css">
+    <link rel="stylesheet" href="/static/styles/components.css">
+    <link rel="stylesheet" href="/static/styles/augmentation.css">
+    <link rel="stylesheet" href="/static/styles/modals.css">
+
+    <link rel="stylesheet" href="/static/styles/launch.css">
+    <link rel="stylesheet" href="/static/styles/configs.css">
+
+</head>
+<body>
+    <div class="container">
+        <div class="nav-tabs">
+            <button type="button" class="nav-tab active" onclick="switchPage('generate')">Generate</button>
+            <button type="button" class="nav-tab" onclick="switchPage('docs')">Docs</button>
+            <button type="button" class="nav-tab" onclick="switchPage('configs')">Configs</button>
+        </div>
+
+        <div id="generate-page" class="page active">
+            <div class="sub-tabs">
+                <button type="button" class="sub-tab active" onclick="switchSubTab('command')">Command</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('models')">Models</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('dataset-classes')">Datasets</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('training')">Training Params</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('preprocessing')">Preprocessing</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('augmentation')">Augmentation</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('metrics')">Metrics</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('loss')">Loss Functions</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('inferer')">Inferer</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('device')">Device</button>
+            </div>
+
+            <div id="sub-command" class="sub-page active">
+                <div class="cmd-summary" id="command-display">
+                    <div class="cmd-summary-header">
+                        <div class="cmd-summary-title">Run Configuration</div>
+                        <button type="button" class="cmd-copy-btn" onclick="copyCommand()" title="Copy terminal command">
+                            <svg class="cmd-copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                            <svg class="cmd-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span class="cmd-copy-label">Copy</span>
+                        </button>
+                    </div>
+                    <div class="cmd-params-grid" id="cmd-params-grid"></div>
+                    <details class="cmd-raw-details">
+                        <summary class="cmd-raw-summary">Terminal command</summary>
+                        <pre class="cmd-raw-block" id="cmd-raw-block"></pre>
+                    </details>
+                </div>
+                <div class="btn-row">
+                    <button type="button" class="btn btn-sm" onclick="generateNewConfig()">Generate Config</button>
+                </div>
+            </div>
+
+            <div id="sub-models" class="sub-page">
+                <div class="form-group">
+                    <label>Model</label>
+                    <select id="model" onchange="updateCommand()">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="sub-dataset-classes" class="sub-page">
+                <div class="form-group">
+                    <label>Dataset</label>
+                    <select id="dataset" onchange="updateCommand()">
+                        <option value="">Loading...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Train Dataset Class</label>
+                    <select id="train_dataset" onchange="onDatasetClassChange('train'); updateCommand()">
+                        <option value="Dataset">Dataset</option>
+                    </select>
+                </div>
+                <div id="train-dataset-options" class="dataset-options aug-section" style="display: none;">
+                    <div id="train-opt-cache-rate" class="aug-row" style="display: none;">
+                        <div class="aug-toggle"><label>Cache Rate</label></div>
+                        <div class="aug-prob">
+                            <input type="range" id="train_cache_rate" min="0" max="1" step="0.1" value="1.0" oninput="document.getElementById('train_cache_rate_val').textContent = this.value; updateCommand()">
+                            <span id="train_cache_rate_val">1</span>
+                        </div>
+                    </div>
+                    <div id="train-opt-replace-rate" class="aug-row" style="display: none;">
+                        <div class="aug-toggle"><label>Replace Rate</label></div>
+                        <div class="aug-prob">
+                            <input type="range" id="train_replace_rate" min="0.01" max="1" step="0.01" value="0.1" oninput="document.getElementById('train_replace_rate_val').textContent = this.value; updateCommand()">
+                            <span id="train_replace_rate_val">0.1</span>
+                        </div>
+                    </div>
+                    <div id="train-opt-cache-dir" class="aug-row" style="display: none;">
+                        <div class="aug-toggle"><label>Cache Directory</label></div>
+                        <div class="aug-prob">
+                            <input type="text" id="train_cache_dir" value="" placeholder="/tmp/monai_cache" oninput="updateCommand()" style="flex: 1;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Inference Dataset Class</label>
+                    <select id="inference_dataset" onchange="onDatasetClassChange('inference'); updateCommand()">
+                        <option value="Dataset">Dataset</option>
+                    </select>
+                </div>
+                <div id="inference-dataset-options" class="dataset-options aug-section" style="display: none;">
+                    <div id="inference-opt-cache-rate" class="aug-row" style="display: none;">
+                        <div class="aug-toggle"><label>Cache Rate</label></div>
+                        <div class="aug-prob">
+                            <input type="range" id="inference_cache_rate" min="0" max="1" step="0.1" value="1.0" oninput="document.getElementById('inference_cache_rate_val').textContent = this.value; updateCommand()">
+                            <span id="inference_cache_rate_val">1</span>
+                        </div>
+                    </div>
+                    <div id="inference-opt-replace-rate" class="aug-row" style="display: none;">
+                        <div class="aug-toggle"><label>Replace Rate</label></div>
+                        <div class="aug-prob">
+                            <input type="range" id="inference_replace_rate" min="0.01" max="1" step="0.01" value="0.1" oninput="document.getElementById('inference_replace_rate_val').textContent = this.value; updateCommand()">
+                            <span id="inference_replace_rate_val">0.1</span>
+                        </div>
+                    </div>
+                    <div id="inference-opt-cache-dir" class="aug-row" style="display: none;">
+                        <div class="aug-toggle"><label>Cache Directory</label></div>
+                        <div class="aug-prob">
+                            <input type="text" id="inference_cache_dir" value="" placeholder="/tmp/monai_cache" oninput="updateCommand()" style="flex: 1;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Output Dir</label>
+                    <input type="text" id="output_dir" value="./predictions" oninput="updateCommand()">
+                </div>
+            </div>
+
+            <div id="sub-training" class="sub-page">
+                <div class="row">
+                    <div class="form-group">
+                        <label>Epochs</label>
+                        <input type="number" id="epochs" value="1" min="1" oninput="updateCommand()">
+                    </div>
+                    <div class="form-group">
+                        <label>Batch Size</label>
+                        <input type="number" id="batch_size" value="4" min="1" oninput="updateCommand()">
+                    </div>
+                    <div class="form-group">
+                        <label>Image Size</label>
+                        <input type="number" id="img_size" value="128" min="32" oninput="updateCommand()">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label>Learning Rate</label>
+                        <input type="number" id="lr" value="0.0001" step="0.0001" oninput="updateCommand()">
+                    </div>
+                    <div class="form-group">
+                        <label>Optimizer</label>
+                        <select id="optimizer" onchange="updateCommand()">
+                            <option value="adam" selected>Adam</option>
+                            <option value="adamw">AdamW</option>
+                            <option value="sgd">SGD</option>
+                            <option value="novograd">Novograd</option>
+                            <option value="rmsprop">RMSprop</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Workers</label>
+                        <input type="number" id="num_workers" value="0" min="0" oninput="updateCommand()">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label>LR Scheduler</label>
+                        <select id="scheduler" onchange="updateCommand()">
+                            <option value="none" selected>None</option>
+                            <option value="cosine">Cosine</option>
+                            <option value="step">Step</option>
+                            <option value="plateau">Plateau</option>
+                            <option value="warmup_cosine">Warmup Cosine</option>
+                            <option value="cosine_warm_restarts">Cosine Warm Restarts</option>
+                            <option value="polynomial">Polynomial</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Patience (X = infinite)</label>
+                        <input type="text" id="patience" value="X" oninput="updateCommand()" placeholder="X or number">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label>Cross Validation</label>
+                        <select id="cross_val_enabled" onchange="updateCommand()">
+                            <option value="true" selected>Enabled</option>
+                            <option value="false">Disabled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fold Count</label>
+                        <input type="number" id="cross_val_count" value="5" min="2" max="10" oninput="updateCommand()">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group">
+                        <label>Val Split Mode</label>
+                        <select id="val_split" onchange="updateCommand()">
+                            <option value="none">None</option>
+                            <option value="holdout">Holdout</option>
+                            <option value="kfold">K-Fold</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="val-ratio-group" style="display:none">
+                        <label>Val Ratio</label>
+                        <input type="number" id="val_ratio" value="0.2" min="0.05" max="0.5" step="0.05" oninput="updateCommand()">
+                    </div>
+                    <div class="form-group">
+                        <label>Split Seed</label>
+                        <input type="number" id="split_seed" value="42" oninput="updateCommand()">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="form-group" id="best-metric-group" style="display:none">
+                        <label>Best Metric</label>
+                        <select id="best_metric" onchange="updateCommand()">
+                            <option value="val_loss" selected>Val Loss</option>
+                            <option value="val_dice">Val Dice</option>
+                            <option value="val_iou">Val IoU</option>
+                            <option value="train_loss">Train Loss</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sub-preprocessing" class="sub-page">
+                <div class="form-group">
+                    <label>Normalization</label>
+                    <div class="aug-section">
+                        <div class="aug-row">
+                            <div class="aug-toggle">
+                                <input type="checkbox" id="norm_minmax" onchange="updateCommand()">
+                                <label for="norm_minmax">MinMax (0-1)</label>
+                            </div>
+                        </div>
+                        <div class="aug-row">
+                            <div class="aug-toggle">
+                                <input type="checkbox" id="norm_zscore" onchange="updateCommand()">
+                                <label for="norm_zscore">Z-Score (mean=0, std=1)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Cropping</label>
+                    <div class="aug-section">
+                        <div class="aug-row">
+                            <div class="aug-toggle">
+                                <input type="checkbox" id="crop_center" onchange="updateCommand()">
+                                <label for="crop_center">Center Crop</label>
+                            </div>
+                        </div>
+                        <div class="aug-row">
+                            <div class="aug-toggle">
+                                <input type="checkbox" id="crop_random" onchange="updateCommand()">
+                                <label for="crop_random">Random Crop</label>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="doc-info">If both selected: random for training, center for inference</p>
+                </div>
+            </div>
+
+            <div id="sub-augmentation" class="sub-page">
+                <div class="aug-section">
+                    <h3 class="aug-section-title">Basic Augmentation</h3>
+                    <div class="aug-row">
+                        <div class="aug-toggle">
+                            <input type="checkbox" id="aug_rotate" onchange="updateCommand()">
+                            <label for="aug_rotate">Rotate</label>
+                        </div>
+                        <div class="aug-prob">
+                            <label>Probability</label>
+                            <input type="range" id="aug_rotate_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()">
+                            <span id="aug_rotate_prob_val">0.5</span>
+                        </div>
+                    </div>
+
+                    <div class="aug-row">
+                        <div class="aug-toggle">
+                            <input type="checkbox" id="aug_flip" onchange="updateCommand()">
+                            <label for="aug_flip">Flip</label>
+                        </div>
+                        <div class="aug-prob">
+                            <label>Probability</label>
+                            <input type="range" id="aug_flip_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()">
+                            <span id="aug_flip_prob_val">0.5</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="aug-section">
+                    <h3 class="aug-section-title">Spatial Transforms</h3>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_affine" name="extra_transforms" value="rand_affine" onchange="updateCommand()"><label for="tx_rand_affine">RandAffine</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_affine_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_affine_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_elastic_2d" name="extra_transforms" value="rand_elastic_2d" onchange="updateCommand()"><label for="tx_rand_elastic_2d">Rand2DElastic</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_elastic_2d_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_elastic_2d_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_elastic_3d" name="extra_transforms" value="rand_elastic_3d" onchange="updateCommand()"><label for="tx_rand_elastic_3d">Rand3DElastic</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_elastic_3d_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_elastic_3d_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_crop_pos_neg" name="extra_transforms" value="rand_crop_pos_neg" onchange="updateCommand()"><label for="tx_rand_crop_pos_neg">RandCropByPosNegLabel</label></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_crop_foreground" name="extra_transforms" value="crop_foreground" onchange="updateCommand()"><label for="tx_crop_foreground">CropForeground</label></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_rotate90" name="extra_transforms" value="rand_rotate90" onchange="updateCommand()"><label for="tx_rand_rotate90">RandRotate90</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_rotate90_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_rotate90_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_spatial_crop_samples" name="extra_transforms" value="rand_spatial_crop_samples" onchange="updateCommand()"><label for="tx_rand_spatial_crop_samples">RandSpatialCropSamples</label></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_spatial_pad" name="extra_transforms" value="spatial_pad" onchange="updateCommand()"><label for="tx_spatial_pad">SpatialPad</label></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_border_pad" name="extra_transforms" value="border_pad" onchange="updateCommand()"><label for="tx_border_pad">BorderPad</label></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_divisible_pad" name="extra_transforms" value="divisible_pad" onchange="updateCommand()"><label for="tx_divisible_pad">DivisiblePad</label></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_grid_patch" name="extra_transforms" value="grid_patch" onchange="updateCommand()"><label for="tx_grid_patch">GridPatch</label></div>
+                    </div>
+                </div>
+
+                <div class="aug-section">
+                    <h3 class="aug-section-title">Intensity Transforms</h3>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_gibbs_noise" name="extra_transforms" value="rand_gibbs_noise" onchange="updateCommand()"><label for="tx_rand_gibbs_noise">RandGibbsNoise</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_gibbs_noise_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_gibbs_noise_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_kspace_spike_noise" name="extra_transforms" value="rand_kspace_spike_noise" onchange="updateCommand()"><label for="tx_rand_kspace_spike_noise">RandKSpaceSpikeNoise</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_kspace_spike_noise_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_kspace_spike_noise_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_bias_field" name="extra_transforms" value="rand_bias_field" onchange="updateCommand()"><label for="tx_rand_bias_field">RandBiasField</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_bias_field_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_bias_field_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_coarse_dropout" name="extra_transforms" value="rand_coarse_dropout" onchange="updateCommand()"><label for="tx_rand_coarse_dropout">RandCoarseDropout</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_coarse_dropout_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_coarse_dropout_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_coarse_shuffle" name="extra_transforms" value="rand_coarse_shuffle" onchange="updateCommand()"><label for="tx_rand_coarse_shuffle">RandCoarseShuffle</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_coarse_shuffle_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_coarse_shuffle_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_histogram_shift" name="extra_transforms" value="rand_histogram_shift" onchange="updateCommand()"><label for="tx_rand_histogram_shift">RandHistogramShift</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_histogram_shift_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_histogram_shift_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_shift_intensity" name="extra_transforms" value="rand_shift_intensity" onchange="updateCommand()"><label for="tx_rand_shift_intensity">RandShiftIntensity</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_shift_intensity_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_shift_intensity_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_scale_intensity" name="extra_transforms" value="rand_scale_intensity" onchange="updateCommand()"><label for="tx_rand_scale_intensity">RandScaleIntensity</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_scale_intensity_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_scale_intensity_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_gaussian_smooth" name="extra_transforms" value="rand_gaussian_smooth" onchange="updateCommand()"><label for="tx_rand_gaussian_smooth">RandGaussianSmooth</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_gaussian_smooth_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_gaussian_smooth_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_rand_gaussian_sharpen" name="extra_transforms" value="rand_gaussian_sharpen" onchange="updateCommand()"><label for="tx_rand_gaussian_sharpen">RandGaussianSharpen</label></div>
+                        <div class="aug-prob"><label>Prob</label><input type="range" id="tx_rand_gaussian_sharpen_prob" min="0" max="1" step="0.1" value="0.5" oninput="updateCommand()"><span id="tx_rand_gaussian_sharpen_prob_val">0.5</span></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_mask_intensity" name="extra_transforms" value="mask_intensity" onchange="updateCommand()"><label for="tx_mask_intensity">MaskIntensity</label></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_clip_intensity_percentiles" name="extra_transforms" value="clip_intensity_percentiles" onchange="updateCommand()"><label for="tx_clip_intensity_percentiles">ClipIntensityPercentiles</label></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_scale_intensity_range" name="extra_transforms" value="scale_intensity_range" onchange="updateCommand()"><label for="tx_scale_intensity_range">ScaleIntensityRange</label></div>
+                    </div>
+                    <div class="aug-row">
+                        <div class="aug-toggle"><input type="checkbox" id="tx_threshold_intensity" name="extra_transforms" value="threshold_intensity" onchange="updateCommand()"><label for="tx_threshold_intensity">ThresholdIntensity</label></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sub-loss" class="sub-page">
+                <div class="form-group">
+                    <label>Loss Function</label>
+                    <select id="loss" onchange="updateCommand()">
+                        <option value="dice" selected>Dice</option>
+                        <option value="cross_entropy">Cross Entropy</option>
+                        <option value="focal">Focal</option>
+                        <option value="dice_ce">Dice + CE</option>
+                        <option value="dice_focal">Dice + Focal</option>
+                        <option value="generalized_dice">Generalized Dice</option>
+                        <option value="generalized_wasserstein_dice">Generalized Wasserstein Dice</option>
+                        <option value="generalized_dice_focal">Generalized Dice + Focal</option>
+                        <option value="tversky">Tversky</option>
+                        <option value="hausdorff_dt">Hausdorff DT</option>
+                        <option value="log_hausdorff_dt">Log Hausdorff DT</option>
+                        <option value="soft_cl_dice">Soft clDice</option>
+                        <option value="soft_dice_cl_dice">Soft Dice + clDice</option>
+                        <option value="masked_dice">Masked Dice</option>
+                        <option value="nacl">NACL</option>
+                        <option value="asymmetric_unified_focal">Asymmetric Unified Focal</option>
+                        <option value="ssim">SSIM</option>
+                    </select>
+                </div>
+                <div class="aug-section">
+                    <div class="aug-row">
+                        <div class="aug-toggle">
+                            <input type="checkbox" id="deep_supervision" onchange="updateCommand()">
+                            <label for="deep_supervision">Deep Supervision</label>
+                        </div>
+                    </div>
+                    <p class="doc-info" style="margin-top: 8px;">Wraps the selected loss with multi-scale supervision. Supported by DynUNet, SegResNetDS, SegResNetDS2, MedNeXt.</p>
+                </div>
+            </div>
+
+            <div id="sub-metrics" class="sub-page">
+                <div class="form-group">
+                    <label>Metrics</label>
+                    <div class="metrics-checkboxes">
+                        <div class="metrics-checkbox">
+                            <input type="checkbox" id="metrics-dice" name="metrics" value="dice" checked onchange="updateCommand()">
+                            <label for="metrics-dice">Dice</label>
+                        </div>
+                        <div class="metrics-checkbox">
+                            <input type="checkbox" id="metrics-iou" name="metrics" value="iou" onchange="updateCommand()">
+                            <label for="metrics-iou">IoU</label>
+                        </div>
+                        <div class="metrics-checkbox">
+                            <input type="checkbox" id="metrics-hausdorff" name="metrics" value="hausdorff" onchange="updateCommand()">
+                            <label for="metrics-hausdorff">Hausdorff Distance</label>
+                        </div>
+                        <div class="metrics-checkbox">
+                            <input type="checkbox" id="metrics-surface_distance" name="metrics" value="surface_distance" onchange="updateCommand()">
+                            <label for="metrics-surface_distance">Surface Distance</label>
+                        </div>
+                        <div class="metrics-checkbox">
+                            <input type="checkbox" id="metrics-surface_dice" name="metrics" value="surface_dice" onchange="updateCommand()">
+                            <label for="metrics-surface_dice">Surface Dice (NSD)</label>
+                        </div>
+                        <div class="metrics-checkbox">
+                            <input type="checkbox" id="metrics-generalized_dice" name="metrics" value="generalized_dice" onchange="updateCommand()">
+                            <label for="metrics-generalized_dice">Generalized Dice</label>
+                        </div>
+                        <div class="metrics-checkbox">
+                            <input type="checkbox" id="metrics-confusion_matrix" name="metrics" value="confusion_matrix" onchange="updateCommand()">
+                            <label for="metrics-confusion_matrix">Confusion Matrix (F1)</label>
+                        </div>
+                        <div class="metrics-checkbox">
+                            <input type="checkbox" id="metrics-fbeta" name="metrics" value="fbeta" onchange="updateCommand()">
+                            <label for="metrics-fbeta">F-Beta Score</label>
+                        </div>
+                        <div class="metrics-checkbox">
+                            <input type="checkbox" id="metrics-panoptic_quality" name="metrics" value="panoptic_quality" onchange="updateCommand()">
+                            <label for="metrics-panoptic_quality">Panoptic Quality</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sub-inferer" class="sub-page">
+                <div class="form-group">
+                    <label>Inferer</label>
+                    <select id="inferer" onchange="updateCommand()">
+                        <option value="simple" selected>Simple (Direct)</option>
+                        <option value="sliding_window">Sliding Window</option>
+                        <option value="patch">Patch</option>
+                        <option value="saliency">Saliency (GradCAM)</option>
+                        <option value="slice">Slice (2D on 3D)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="sub-device" class="sub-page">
+                <div class="row">
+                    <div class="form-group">
+                        <label>Device</label>
+                        <select id="device" onchange="updateCommand()">
+                            <option value="cuda">CUDA</option>
+                            <option value="cpu">CPU</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Mixed Precision</label>
+                        <select id="mixed_precision" onchange="updateCommand()">
+                            <option value="no" selected>No</option>
+                            <option value="fp16">FP16</option>
+                            <option value="bf16">BF16</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="docs-page" class="page">
+            <div class="sub-tabs">
+                <button type="button" class="sub-tab active" onclick="switchSubTab('models')">Models</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('dataset-classes')">Datasets</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('training')">Training Params</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('preprocessing')">Preprocessing</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('augmentation')">Augmentation</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('metrics')">Metrics</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('loss')">Loss Functions</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('inferer')">Inferer</button>
+                <button type="button" class="sub-tab" onclick="switchSubTab('device')">Device</button>
+            </div>
+
+            <div id="sub-models" class="sub-page active">
+                <h2>Models</h2>
+                <div class="doc-section"><h3>UNet</h3><p>Standard U-Net architecture</p></div>
+                <div class="doc-section"><h3>Attention UNet</h3><p>U-Net with attention gates</p></div>
+                <div class="doc-section"><h3>SegResNet</h3><p>Segmentation ResNet</p></div>
+                <div class="doc-section"><h3>SwinUNETR</h3><p>Swin Transformer-based UNETR</p></div>
+                <div class="doc-section"><h3>BasicUNet</h3><p>Simplified U-Net architecture</p></div>
+                <div class="doc-section"><h3>BasicUNet++</h3><p>UNet++ with nested skip connections for better feature reuse</p></div>
+                <div class="doc-section"><h3>DynUNet</h3><p>Dynamic U-Net (nnU-Net style) with adaptive kernel sizes</p></div>
+                <div class="doc-section"><h3>VNet</h3><p>Volumetric segmentation network with residual connections</p></div>
+                <div class="doc-section"><h3>HighResNet</h3><p>High-resolution network designed for brain parcellation</p></div>
+                <div class="doc-section"><h3>UNETR</h3><p>UNet with Vision Transformers as encoder</p></div>
+                <div class="doc-section"><h3>SegResNetVAE</h3><p>SegResNet with variational autoencoder branch</p></div>
+                <div class="doc-section"><h3>SegResNetDS / DS2</h3><p>SegResNet with deep supervision for better gradient flow</p></div>
+                <div class="doc-section"><h3>FlexibleUNet</h3><p>U-Net with configurable backbone (EfficientNet-B0)</p></div>
+                <div class="doc-section"><h3>DiNTS</h3><p>Differentiable Neural Architecture Search for segmentation</p></div>
+                <div class="doc-section"><h3>MedNeXt (S/M/B/L)</h3><p>ConvNeXt-style medical image segmentation in four sizes</p></div>
+            </div>
+
+            <div id="sub-dataset-classes" class="sub-page">
+                <h2>Datasets</h2>
+                <div class="doc-section"><h3>Dataset</h3><p>Basic in-memory dataset</p></div>
+                <div class="doc-section"><h3>CacheDataset</h3><p>Caches entire dataset in memory for fast access</p></div>
+                <div class="doc-section"><h3>PersistentDataset</h3><p>Persistent cache on disk with hash-based validity checking</p></div>
+                <div class="doc-section"><h3>SmartCacheDataset</h3><p>Intelligent caching with automatic replacement</p></div>
+                <div class="doc-section"><h3>LMDBDataset</h3><p>LMDB-backed persistent cache for fast random access I/O</p></div>
+                <div class="doc-section"><h3>CacheNTransDataset</h3><p>Cache first N transforms for partial caching efficiency</p></div>
+                <div class="doc-section"><h3>ArrayDataset</h3><p>Simple dataset from separate image/label arrays</p></div>
+                <div class="doc-section"><h3>ZipDataset</h3><p>Combine multiple datasets together</p></div>
+                <div class="doc-section"><h3>GridPatchDataset</h3><p>Grid-based patch extraction dataset</p></div>
+                <div class="doc-section"><h3>PatchDataset</h3><p>Random patch extraction dataset</p></div>
+                <div class="doc-section"><h3>DecathlonDataset</h3><p>Medical Segmentation Decathlon benchmark dataset</p></div>
+            </div>
+
+            <div id="sub-training" class="sub-page">
+                <h2>Training Params</h2>
+                <div class="doc-section"><h3>Epochs</h3><p>Number of training epochs</p><p class="doc-info">Default: 1</p></div>
+                <div class="doc-section"><h3>Batch Size</h3><p>Number of samples per batch</p><p class="doc-info">Default: 4</p></div>
+                <div class="doc-section"><h3>Learning Rate</h3><p>Optimizer learning rate</p><p class="doc-info">Default: 0.0001</p></div>
+                <div class="doc-section"><h3>Image Size</h3><p>Image size for resizing (applies to all dimensions)</p><p class="doc-info">Default: 128</p></div>
+                <div class="doc-section"><h3>Workers</h3><p>Number of data loading workers</p><p class="doc-info">Default: 0</p></div>
+                <div class="doc-section">
+                    <h3>Optimizer</h3>
+                    <p class="doc-info">Adam: Adaptive learning rate with momentum. Default.</p>
+                    <p class="doc-info">AdamW: Adam with decoupled weight decay.</p>
+                    <p class="doc-info">SGD: Stochastic Gradient Descent with momentum.</p>
+                    <p class="doc-info">Novograd: MONAI layer-wise adaptive optimizer. Good for large batch training.</p>
+                    <p class="doc-info">RMSprop: Root mean square propagation.</p>
+                </div>
+                <div class="doc-section">
+                    <h3>LR Scheduler</h3>
+                    <p class="doc-info">none: Constant learning rate. Default.</p>
+                    <p class="doc-info">cosine: Cosine annealing.</p>
+                    <p class="doc-info">step: Step decay at fixed intervals.</p>
+                    <p class="doc-info">plateau: ReduceLROnPlateau.</p>
+                    <p class="doc-info">warmup_cosine: Linear warmup + cosine decay.</p>
+                    <p class="doc-info">cosine_warm_restarts: Cosine with periodic warm restarts.</p>
+                    <p class="doc-info">polynomial: Polynomial decay schedule.</p>
+                </div>
+                <div class="doc-section">
+                    <h3>Patience</h3>
+                    <p class="doc-info">X: No early stopping (default).</p>
+                    <p class="doc-info">3-20: Enable early stopping after N epochs without improvement.</p>
+                </div>
+            </div>
+
+            <div id="sub-preprocessing" class="sub-page">
+                <h2>Preprocessing</h2>
+                <div class="doc-section"><h3>MinMax Normalization</h3><p>Scale intensity values to [0, 1] range.</p></div>
+                <div class="doc-section"><h3>Z-Score Normalization</h3><p>Normalize to zero mean and unit variance.</p></div>
+                <div class="doc-section"><h3>Center Crop</h3><p>Crop from center to target size.</p></div>
+                <div class="doc-section"><h3>Random Crop</h3><p>Random crop to target size (training only).</p></div>
+            </div>
+
+            <div id="sub-augmentation" class="sub-page">
+                <h2>Augmentation</h2>
+                <div class="doc-section"><h3>Basic</h3>
+                    <p class="doc-info">Rotate: Random rotation transform.</p>
+                    <p class="doc-info">Flip: Random flip (horizontal and/or vertical).</p>
+                </div>
+                <div class="doc-section"><h3>Spatial Transforms</h3>
+                    <p class="doc-info">RandAffine: Combined rotation, scaling, and translation.</p>
+                    <p class="doc-info">Rand2DElastic / Rand3DElastic: Elastic deformation.</p>
+                    <p class="doc-info">RandCropByPosNegLabel: Balanced foreground/background sampling.</p>
+                    <p class="doc-info">CropForeground: Auto-crop to foreground.</p>
+                    <p class="doc-info">RandRotate90: Random 90-degree rotation.</p>
+                    <p class="doc-info">RandSpatialCropSamples: Multiple random crop samples.</p>
+                    <p class="doc-info">SpatialPad / BorderPad / DivisiblePad: Padding strategies.</p>
+                    <p class="doc-info">GridPatch: Grid-based patch extraction.</p>
+                </div>
+                <div class="doc-section"><h3>Intensity Transforms</h3>
+                    <p class="doc-info">RandGibbsNoise / RandKSpaceSpikeNoise / RandBiasField: MRI artifacts.</p>
+                    <p class="doc-info">RandCoarseDropout / RandCoarseShuffle: Region-based augmentation.</p>
+                    <p class="doc-info">RandHistogramShift: Non-linear intensity mapping.</p>
+                    <p class="doc-info">RandShiftIntensity / RandScaleIntensity: Intensity offset/scaling.</p>
+                    <p class="doc-info">RandGaussianSmooth / RandGaussianSharpen: Blurring/sharpening.</p>
+                    <p class="doc-info">MaskIntensity / ClipIntensityPercentiles: Masking and clipping.</p>
+                    <p class="doc-info">ScaleIntensityRange / ThresholdIntensity: Range mapping.</p>
+                </div>
+            </div>
+
+             <div id="sub-metrics" class="sub-page">
+                 <h2>Metrics</h2>
+                 <div class="doc-section"><h3>Dice</h3><p>Dice coefficient for segmentation overlap.</p></div>
+                 <div class="doc-section"><h3>IoU</h3><p>Intersection over Union (Jaccard Index).</p></div>
+                 <div class="doc-section"><h3>Hausdorff Distance</h3><p>Maximum boundary distance.</p></div>
+                 <div class="doc-section"><h3>Surface Distance</h3><p>Average surface distance.</p></div>
+                 <div class="doc-section"><h3>Surface Dice (NSD)</h3><p>Normalized Surface Dice at tolerance threshold.</p></div>
+                 <div class="doc-section"><h3>Generalized Dice</h3><p>Volume-weighted Dice for class imbalance.</p></div>
+                 <div class="doc-section"><h3>Confusion Matrix (F1)</h3><p>F1, sensitivity, specificity, precision.</p></div>
+                 <div class="doc-section"><h3>F-Beta Score</h3><p>Weighted harmonic mean of precision and recall.</p></div>
+                 <div class="doc-section"><h3>Panoptic Quality</h3><p>PQ, SQ, RQ metrics.</p></div>
+             </div>
+
+            <div id="sub-loss" class="sub-page">
+                <h2>Loss Functions</h2>
+                <div class="doc-section"><h3>Dice Loss</h3><p>Dice coefficient-based loss. Default.</p></div>
+                <div class="doc-section"><h3>Cross Entropy</h3><p>Standard cross-entropy for multi-class.</p></div>
+                <div class="doc-section"><h3>Focal Loss</h3><p>Focuses on hard examples for imbalanced data.</p></div>
+                <div class="doc-section"><h3>Dice + CE / Dice + Focal</h3><p>Combined losses.</p></div>
+                <div class="doc-section"><h3>Generalized Dice</h3><p>Weighted Dice for extreme class imbalance.</p></div>
+                <div class="doc-section"><h3>Generalized Wasserstein Dice</h3><p>Label similarity-aware loss.</p></div>
+                <div class="doc-section"><h3>Tversky</h3><p>Tunable FP/FN trade-off via alpha/beta.</p></div>
+                <div class="doc-section"><h3>Hausdorff DT / Log Hausdorff DT</h3><p>Boundary-quality losses.</p></div>
+                <div class="doc-section"><h3>Soft clDice</h3><p>Centerline Dice for tubular structures.</p></div>
+                <div class="doc-section"><h3>Masked Dice</h3><p>Spatially masked Dice loss.</p></div>
+                <div class="doc-section"><h3>NACL</h3><p>Neighbor-Aware Constrained Loss.</p></div>
+                <div class="doc-section"><h3>Asymmetric Unified Focal</h3><p>Asymmetric focal formulation.</p></div>
+                <div class="doc-section"><h3>SSIM</h3><p>Structural similarity loss.</p></div>
+                <div class="doc-section"><h3>Deep Supervision</h3><p>Multi-scale weighted loss.</p></div>
+            </div>
+
+            <div id="sub-inferer" class="sub-page">
+                <h2>Inferer</h2>
+                <div class="doc-section"><h3>Simple</h3><p>Direct model forward pass. Default.</p></div>
+                <div class="doc-section"><h3>Sliding Window</h3><p>Overlapping patches with Gaussian blending for large volumes.</p></div>
+                <div class="doc-section"><h3>Patch</h3><p>Patch-based with splitter/merger pattern.</p></div>
+                <div class="doc-section"><h3>Saliency (GradCAM)</h3><p>Class activation maps for interpretability.</p></div>
+                <div class="doc-section"><h3>Slice</h3><p>Apply 2D model slice-by-slice on 3D volumes.</p></div>
+            </div>
+
+            <div id="sub-device" class="sub-page">
+                <h2>Device</h2>
+                <div class="doc-section"><h3>CUDA</h3><p>GPU acceleration</p></div>
+                <div class="doc-section"><h3>CPU</h3><p>CPU computation</p></div>
+                <div class="doc-section">
+                    <h3>Mixed Precision</h3>
+                    <p class="doc-info">no: Full precision (32-bit). Default.</p>
+                    <p class="doc-info">fp16: Half precision. Faster, less stable.</p>
+                    <p class="doc-info">bf16: Brain float. Better stability than fp16.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="configs-page" class="page">
+            <div class="sub-tabs">
+                <button type="button" class="sub-tab" onclick="syncWandb()">Sync W&B</button>
+            </div>
+            <div id="configs-list"></div>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        <div class="footer-content">
+            <div class="footer-start">
+                <button type="button" class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">&#9685;</button>
+                <p>AutoMONAI</p>
+            </div>
+            <div class="footer-actions">
+                <span class="footer-hint">Ctrl+Shift+H &rarr; Shortcuts</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-search-modal" class="tab-search-modal">
+        <div class="tab-search-container">
+            <input type="text" id="tab-search-input" class="tab-search-input" placeholder="Search tabs..." autocomplete="off">
+            <div id="tab-search-results" class="tab-search-results"></div>
+            <div class="tab-search-hint">
+                <span class="hint-key">&uarr;&darr;</span> Navigate
+                <span class="hint-key">Enter</span> Select
+                <span class="hint-key">Esc</span> Close
+            </div>
+        </div>
+    </div>
+
+    <div id="command-modal" class="command-modal">
+        <div class="command-modal-container">
+            <div class="command-modal-header">
+                <span class="command-modal-title">Command</span>
+                <span class="command-modal-hint-inline">Alt+C to close</span>
+            </div>
+            <div class="output" id="command-modal-display"></div>
+            <div class="command-modal-footer">
+                <span class="hint-key">Ctrl+Shift+C</span> Copy &nbsp;
+                <span class="hint-key">Esc</span> Close
+            </div>
+        </div>
+    </div>
+
+    <div id="shortcuts-modal" class="shortcuts-modal">
+        <div class="shortcuts-modal-container">
+            <div class="shortcuts-modal-header">
+                <span class="shortcuts-modal-title">Keyboard Shortcuts</span>
+                <span class="command-modal-hint-inline">Esc to close</span>
+            </div>
+            <div class="shortcuts-modal-content">
+                <div class="shortcut-row"><span class="hint-key">Ctrl+Shift+K</span> Search tabs</div>
+                <div class="shortcut-row"><span class="hint-key">Alt+C</span> Command preview</div>
+                <div class="shortcut-row"><span class="hint-key">Ctrl+Shift+C</span> Copy command</div>
+                <div class="shortcut-row"><span class="hint-key">Ctrl+Shift+H</span> This dialog</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="confirm-modal">
+        <div class="confirm-modal-container">
+            <div class="confirm-modal-header">
+                <span class="confirm-modal-title">Confirm</span>
+            </div>
+            <div class="confirm-modal-body">
+                <p class="confirm-modal-message" id="confirm-modal-message"></p>
+            </div>
+            <div class="confirm-modal-footer">
+                <button type="button" class="cmd-link confirm-modal-cancel" id="confirm-modal-cancel">Cancel</button>
+                <button type="button" class="cmd-link launch-link confirm-modal-ok" id="confirm-modal-ok">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/theme.js"></script>
+    <script src="/static/js/ui-actions.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/command.js"></script>
+    <script src="/static/js/nav.js"></script>
+    <script src="/static/js/search.js"></script>
+    <script src="/static/js/configs.js?v=2"></script>
+
+    <script src="/static/launch.js?v=2"></script>
+    <script src="/static/js/init.js"></script>
+</body>
+</html>

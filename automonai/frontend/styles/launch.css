@@ -1,0 +1,162 @@
+/* Launch */
+.launch-bar {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	background: var(--bg-input);
+	border: 1px solid var(--border);
+	padding: 12px;
+	margin-bottom: 24px;
+}
+
+.launch-config-line {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.config-text {
+	font-family: var(--font-mono);
+	font-size: 0.65rem;
+	color: var(--fg-dim);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	flex: 1;
+	min-width: 0;
+}
+
+.config-text span {
+	color: var(--fg);
+	font-weight: 500;
+}
+
+.cmd-link {
+	background: transparent;
+	border: 1px solid var(--border);
+	color: var(--fg-dim);
+	font-family: var(--font-mono);
+	font-size: 0.65rem;
+	padding: 4px 8px;
+	cursor: pointer;
+	transition: all 0.2s;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	white-space: nowrap;
+	line-height: 1;
+}
+
+.cmd-link:hover {
+	border-color: var(--fg);
+	color: var(--fg);
+}
+
+.launch-link {
+	background: var(--fg);
+	color: var(--bg);
+	border: 1px solid var(--fg);
+	font-weight: 600;
+	padding: 4px 8px;
+}
+
+.launch-link:hover {
+	opacity: 0.85;
+}
+
+.launch-progress-container {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	position: relative;
+}
+
+.progress-bar {
+	flex: 1;
+	height: 12px;
+	background: var(--border);
+	border-radius: 0;
+	overflow: hidden;
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.progress-fill {
+	height: 100%;
+	background: #4ade80;
+	width: 0%;
+	transition: width 0.2s ease;
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+
+.progress-text {
+	position: relative;
+	font-family: var(--font-mono);
+	font-size: 0.7rem;
+	font-weight: 700;
+	color: #fff;
+	text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+	white-space: nowrap;
+	pointer-events: none;
+	z-index: 10;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+}
+
+.progress-number {
+	font-family: var(--font-mono);
+	font-size: 0.65rem;
+	font-weight: 600;
+	color: var(--fg);
+	white-space: nowrap;
+	min-width: 32px;
+	text-align: right;
+}
+
+#launch-status-indicator {
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	font-weight: 500;
+}
+
+.status-idle {
+	color: var(--fg-dim);
+}
+
+.status-running {
+	color: #4ade80;
+}
+
+.card-actions {
+	display: flex;
+	gap: 0;
+}
+
+.card-full-btn,
+.delete-link,
+.card-launch-btn,
+.card-infer-btn,
+.card-stop-btn {
+	padding: 2px 6px;
+	font-size: 0.6rem;
+	font-weight: 600;
+}
+
+.delete-link {
+	background: transparent;
+	border: 1px solid #ef4444;
+	color: #ef4444;
+}
+
+.delete-link:hover {
+	background: #ef4444;
+	color: #fff;
+}
